@@ -139,3 +139,6 @@ example/data/
 utils/data/
 *data/
 /data/
+
+# network
+/NNs/*.pth

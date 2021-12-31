@@ -5,33 +5,14 @@ import torch.optim as optim
 import torchvision.datasets as dsets
 import torchvision.transforms as transforms
 
-from blitz.modules import BayesianLinear, BayesianConv2d
-from blitz.losses import kl_divergence_from_nn
+from blitz.modules import BayesianLinear
 from blitz.utils import variational_estimator
+from src.HybridNN import HybridNN
 
-train_dataset = dsets.MNIST(root="./data", train=True, transform=transforms.ToTensor(), download=True)
+train_dataset = dsets.MNIST(root="../data", train=True, transform=transforms.ToTensor(), download=True)
 train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=64, shuffle=True)
-test_dataset = dsets.MNIST(root="./data", train=False, transform=transforms.ToTensor(), download=True)
+test_dataset = dsets.MNIST(root="../data", train=False, transform=transforms.ToTensor(), download=True)
 test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=64, shuffle=True)
-
-
-@variational_estimator
-class HybridNN(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.fc1 = nn.Linear(28 * 28, 512)
-        self.fc2 = nn.Linear(512, 256)
-        self.fc3 = nn.Linear(256, 128)
-        self.fc4 = BayesianLinear(128, 64)
-        self.fc5 = BayesianLinear(64, 10)
-
-    def forward(self, x):
-        out = F.relu(self.fc1(x))
-        out = F.relu(self.fc2(out))
-        out = F.relu(self.fc3(out))
-        out = F.relu(self.fc4(out))
-        out = self.fc5(out)
-        return out
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -46,18 +27,20 @@ for epoch in range(2):
     for i, (datapoints, labels) in enumerate(train_loader):
         datapoints = datapoints.reshape(-1, 28 * 28)
         optimizer.zero_grad()
+
+        # We do a training loop that only differs from a common torch training
+        # by having its loss sampled by its sample_elbo method.
         loss = classifier.sample_elbo(inputs=datapoints.to(device),
                                       labels=labels.to(device),
                                       criterion=criterion,
                                       sample_nbr=3,
                                       complexity_cost_weight=1 / 50000)
-        # print(loss)
+        # print("train dataset loss: ", loss)
         loss.backward()
         optimizer.step()
 
         iteration += 1
         if iteration % 250 == 0:
-            print("loss: ", loss)
             correct = 0
             total = 0
             with torch.no_grad():
@@ -70,5 +53,9 @@ for epoch in range(2):
                     correct += (predicted == labels.to(device)).sum().item()
             print('Iteration: {} | Accuracy of the network '
                   'on the 10000 test images: {} %'.format(str(iteration), str(100 * correct / total)))
+
+
+PATH = '../NNs/HybridNN.pth'
+torch.save(classifier.state_dict(), PATH)
 
 print("over")
