@@ -22,7 +22,7 @@ class HybridNN(nn.Module):
         self.fc1 = nn.Linear(28 * 28, 512)
         self.fc2 = nn.Linear(512, 256)
         self.fc3 = nn.Linear(256, 128)
-        self.fc4 = nn.Linear(128, 64)
+        self.fc4 = BayesianLinear(128, 64)
         self.fc5 = BayesianLinear(64, 10)
 
     def forward(self, x):
@@ -36,6 +36,7 @@ class HybridNN(nn.Module):
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 classifier = HybridNN().to(device)
+print(classifier)
 optimizer = optim.Adam(classifier.parameters(), lr=0.001)
 criterion = torch.nn.CrossEntropyLoss()
 

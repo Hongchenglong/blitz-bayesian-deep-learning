@@ -9,33 +9,22 @@ from blitz.modules import BayesianLinear, BayesianConv2d
 from blitz.losses import kl_divergence_from_nn
 from blitz.utils import variational_estimator
 
-train_dataset = dsets.MNIST(root="./data",
-                             train=True,
-                             transform=transforms.ToTensor(),
-                             download=True
-                            )
-train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
-                                           batch_size=64,
-                                           shuffle=True)
+train_dataset = dsets.MNIST(root="./data", train=True, transform=transforms.ToTensor(), download=True )
+train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=64, shuffle=True)
 
-test_dataset = dsets.MNIST(root="./data",
-                             train=False,
-                             transform=transforms.ToTensor(),
-                             download=True
-                            )
-test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
-                                           batch_size=64,
-                                           shuffle=True)
+test_dataset = dsets.MNIST(root="./data", train=False, transform=transforms.ToTensor(), download=True)
+test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=64, shuffle=True)
+
 
 @variational_estimator
 class BayesianCNN(nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv1 = BayesianConv2d(1, 6, (5,5))
-        self.conv2 = BayesianConv2d(6, 16, (5,5))
-        self.fc1   = BayesianLinear(256, 120)
-        self.fc2   = BayesianLinear(120, 84)
-        self.fc3   = BayesianLinear(84, 10)
+        self.conv1 = BayesianConv2d(1, 6, (5, 5))
+        self.conv2 = BayesianConv2d(6, 16, (5, 5))
+        self.fc1 = BayesianLinear(256, 120)
+        self.fc2 = BayesianLinear(120, 84)
+        self.fc3 = BayesianLinear(84, 10)
 
     def forward(self, x):
         out = F.relu(self.conv1(x))
@@ -48,6 +37,7 @@ class BayesianCNN(nn.Module):
         out = self.fc3(out)
         return out
 
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 classifier = BayesianCNN().to(device)
 optimizer = optim.Adam(classifier.parameters(), lr=0.001)
@@ -58,16 +48,16 @@ for epoch in range(100):
     for i, (datapoints, labels) in enumerate(train_loader):
         optimizer.zero_grad()
         loss = classifier.sample_elbo(inputs=datapoints.to(device),
-                           labels=labels.to(device),
-                           criterion=criterion,
-                           sample_nbr=3,
-                           complexity_cost_weight=1/50000)
-        #print(loss)
+                                      labels=labels.to(device),
+                                      criterion=criterion,
+                                      sample_nbr=3,
+                                      complexity_cost_weight=1 / 50000)
+        # print(loss)
         loss.backward()
         optimizer.step()
-        
+
         iteration += 1
-        if iteration%250==0:
+        if iteration % 250 == 0:
             print(loss)
             correct = 0
             total = 0
@@ -78,4 +68,5 @@ for epoch in range(100):
                     _, predicted = torch.max(outputs.data, 1)
                     total += labels.size(0)
                     correct += (predicted == labels.to(device)).sum().item()
-            print('Iteration: {} | Accuracy of the network on the 10000 test images: {} %'.format(str(iteration) ,str(100 * correct / total)))
+            print('Iteration: {} | Accuracy of the network on the 10000 test images: {} %'.format(str(iteration),
+                                                                                                  str(100 * correct / total)))

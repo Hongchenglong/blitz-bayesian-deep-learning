@@ -15,10 +15,7 @@ X, y = load_boston(return_X_y=True)
 X = StandardScaler().fit_transform(X)
 y = StandardScaler().fit_transform(np.expand_dims(y, -1))
 
-X_train, X_test, y_train, y_test = train_test_split(X,
-                                                    y,
-                                                    test_size=.25,
-                                                    random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.25, random_state=42)
 
 
 X_train, y_train = torch.tensor(X_train).float(), torch.tensor(y_train).float()
