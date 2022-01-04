@@ -297,7 +297,7 @@ def compute_all_intervals_proc(a):
         loaded_model = np.load(model_path, allow_pickle=True)
         [mW_0, mb_0, mW_1, mb_1, dW_0, db_0, dW_1, db_1] = loaded_model['arr_0']
     except:
-        with open(model_path, 'r') as pickle_file:
+        with open(model_path, 'rb') as pickle_file:
             [mW_0, mb_0, mW_1, mb_1, dW_0, db_0, dW_1, db_1] = pickle.load(pickle_file)
     vW_0 = []
     for valid_intervals in V:
