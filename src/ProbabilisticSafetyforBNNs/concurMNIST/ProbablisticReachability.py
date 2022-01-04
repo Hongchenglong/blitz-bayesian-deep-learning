@@ -305,12 +305,13 @@ def compute_all_intervals_proc(a):
 
     vW_0 = np.asarray(vW_0)
 
+    print("交换维度前: ", vW_0.shape)
     if (isweight):
         vW_0 = np.swapaxes(vW_0, 0, 2)
         vW_0 = np.swapaxes(vW_0, 0, 1)
     else:
         vW_0 = np.swapaxes(vW_0, 0, 1)
-    print(vW_0.shape)
+    print("交换维度后: ", vW_0.shape)
     # After we merge them, we need to use the erf function to evaluate exactly what the 
     #   lower bound on the probability is!
     ind = i
