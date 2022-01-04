@@ -2,8 +2,9 @@ import numpy as np
 from tqdm import trange
 import tensorflow as tf
 
-sess = tf.compat.v1.InteractiveSession
-tf.global_variables_initializer().run()
+# 初始化模型的参数
+with tf.compat.v1.Session() as sess:
+    tf.compat.v1.global_variables_initializer().run()
 
 model_path = "ERR - NO MODEL SET. Call set_model_path function."
 # model_path = "MNIST_Networks/VIMODEL_MNIST_1_64_relu.net.npz"
