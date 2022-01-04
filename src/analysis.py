@@ -13,9 +13,6 @@ import torchvision.datasets as dsets
 import torchvision.transforms as transforms
 
 
-
-
-
 classes = ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9')
 test_dataset = dsets.MNIST(root="../data", train=False, transform=transforms.ToTensor(), download=True)
 test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=64, shuffle=True)
