@@ -16,8 +16,8 @@
 # python IBP-MNIST-Verify.py --imnum $IMNUM --eps 0.025 --samples 1250 --width 64 --margin 2.0
 image = 1  # 第i张图
 epsilon = 0.025  # 噪声
-# iters = 1250
-iters = 150
+iters = 1250
+# iters = 150
 width = 64
 margin = 2.0
 nproc = 25
@@ -31,16 +31,18 @@ import ProbablisticReachability
 from ProbablisticReachability import compute_all_intervals_proc
 from ProbablisticReachability import interval_bound_propagation_VCAS
 
+
 def my_relu(arr):
     arr = arr * (arr > 0)
     return arr
 
+
 (X_train, y_train), (X_test, y_test) = tf.keras.datasets.mnist.load_data()
 
-X_test = X_test/255.
-X_test = X_test.astype("float32").reshape(-1, 28*28)
+X_test = X_test / 255.
+X_test = X_test.astype("float32").reshape(-1, 28 * 28)
 
-y_test = tf.one_hot(y_test,10)
+y_test = tf.one_hot(y_test, 10)
 
 x = X_test[image]
 x1 = x
@@ -94,13 +96,13 @@ elapsed = stop - start
 print("len(valid_intervals): ", len(valid_intervals))
 print("valid_intervals: ", valid_intervals)
 
-
 if (len(valid_intervals) == 0):
     import logging
 
     ph1 = 0.0
-    logging.basicConfig(filename="Runs%s.log" % (width), level=logging.DEBUG)
-    logging.info("i#=%s_w=%s_e=%s_m=%s_n=%s_t=%s_p=%s" % (image, width, epsilon, margin, iters, elapsed, ph1))
+    logging.basicConfig(filename="Runs%s.log" % width, level=logging.DEBUG)
+    logging.info("image=%s,width=%s,epsilon=%s,margin=%s,iters=%s,elapsed=%s,ph1=%s" % (
+    image, width, epsilon, margin, iters, elapsed, ph1))
 
 vad_int = []
 vW_0 = []
@@ -119,8 +121,9 @@ except:
     import logging
 
     ph1 = 0.0
-    logging.basicConfig(filename="Runs%s.log" % (width), level=logging.DEBUG)
-    logging.info("i#=%s_w=%s_e=%s_m=%s_n=%s_t=%s_c=0_p=%s" % (image, width, epsilon, margin, iters, elapsed, ph1))
+    logging.basicConfig(filename="Runs%s.log" % width, level=logging.DEBUG)
+    logging.info("image=%s,width=%s,epsilon=%s,margin=%s,iters=%s,elapsed=%s,ph1=%s"
+                 % (image, width, epsilon, margin, iters, elapsed, ph1))
     logged_flag = True
 valid_intervals = vad_int
 print("IN TOTAL THERE ARE THIS MANY INTERVALS: ")
@@ -145,7 +148,7 @@ p = math.exp(p)
 ph1 = p
 """
 # valid_intervals =  interval_bound_propagation_VCAS(x1, x_reg_1, out_cls, w_margin=margin, search_samps=iters)
-if (margin != 0):
+if margin != 0:
     p1 = compute_all_intervals_proc((valid_intervals, True, 0, margin, nproc))
     p2 = compute_all_intervals_proc((valid_intervals, False, 1, margin, nproc))
     p3 = compute_all_intervals_proc((valid_intervals, True, 2, margin, nproc))
@@ -164,5 +167,5 @@ if (not logged_flag):
     import logging
 
     logging.basicConfig(filename="F_Runs%s.log" % (width), level=logging.DEBUG)
-    logging.info("i#=%s_w=%s_e=%s_m=%s_n=%s_t=%s_c=%s_p=%s" % (
-        image, width, epsilon, margin, iters, elapsed, len(valid_intervals), ph1))
+    logging.info("image=%s,width=%s,epsilon=%s,margin=%s,iters=%s,elapsed=%s,len(valid_intervals)=%s,ph1=%s"
+                 % (image, width, epsilon, margin, iters, elapsed, len(valid_intervals), ph1))
