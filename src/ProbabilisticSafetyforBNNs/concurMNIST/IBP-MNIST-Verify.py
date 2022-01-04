@@ -83,7 +83,7 @@ from multiprocessing import Pool
 p = Pool(nproc)
 args = []
 for i in range(nproc):
-    args.append((x1, x_reg_1, out_cls, margin, iters / nproc, i))
+    args.append((x1, x_reg_1, out_cls, margin, int(iters / nproc), i))
 valid_intervals = p.map(interval_bound_propagation_VCAS, args)
 p.close()
 p.join()
