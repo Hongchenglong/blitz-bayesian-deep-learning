@@ -22,7 +22,7 @@ width = 64
 margin = 2.0
 nproc = 25
 
-
+# pickle提供了一个简单的持久化功能, 可以将对象以文件的形式存放在磁盘上。
 import pickle
 import math
 import numpy as np

@@ -2,7 +2,7 @@ import numpy as np
 from tqdm import trange
 import tensorflow as tf
 
-sess = tf.InteractiveSession()
+sess = tf.compat.v1.InteractiveSession
 tf.global_variables_initializer().run()
 
 model_path = "ERR - NO MODEL SET. Call set_model_path function."
