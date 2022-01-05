@@ -142,3 +142,4 @@ utils/data/
 
 # network
 /NNs/*.pth
+/src/ProbabilisticSafetyforBNNs/Test/

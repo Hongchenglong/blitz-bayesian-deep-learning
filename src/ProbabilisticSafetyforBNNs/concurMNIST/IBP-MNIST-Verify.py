@@ -1,24 +1,24 @@
-import argparse
-parser = argparse.ArgumentParser()
-parser.add_argument("--imnum")
-parser.add_argument("--eps")
-parser.add_argument("--samples")
-parser.add_argument("--width")
-parser.add_argument("--margin")
+# import argparse
+# parser = argparse.ArgumentParser()
+# parser.add_argument("--imnum")
+# parser.add_argument("--eps")
+# parser.add_argument("--samples")
+# parser.add_argument("--width")
+# parser.add_argument("--margin")
+#
+# args = parser.parse_args()
+# image = int(args.imnum)
+# epsilon = float(args.eps)
+# iters = int(args.samples)
+# width = int(args.width)
+# margin = float(args.margin)
 
-args = parser.parse_args()
-image = int(args.imnum)
-epsilon = float(args.eps)
-iters = int(args.samples)
-width = int(args.width)
-margin = float(args.margin)
-
-# python IBP-MNIST-Verify.py --imnum $IMNUM --eps 0.025 --samples 1250 --width 64 --margin 2.0
-# image = 1  # 第i张图
-# epsilon = 0.025  # 噪声
-# iters = 25
-# width = 64
-# margin = 2.0
+# python IBP-MNIST-Verify-Test.py --imnum $IMNUM --eps 0.025 --samples 1250 --width 64 --margin 2.0
+image = 1  # 第i张图
+epsilon = 0.025  # 噪声
+iters = 500
+width = 64
+margin = 2.0
 
 nproc = 25
 
@@ -87,7 +87,7 @@ import time
 
 start = time.time()
 from multiprocessing import Pool
-
+## 得到最大安全权重集
 p = Pool(nproc)
 args = []
 for i in range(nproc):
@@ -100,7 +100,6 @@ stop = time.time()
 
 elapsed = stop - start
 print("len(valid_intervals): ", len(valid_intervals))
-print("valid_intervals: ", valid_intervals)
 
 if len(valid_intervals) == 0:
     import logging
@@ -134,6 +133,10 @@ except:
 valid_intervals = vad_int
 print("IN TOTAL THERE ARE THIS MANY INTERVALS: ")
 print(len(valid_intervals))
+if len(valid_intervals) == 0:
+    print("最大安全权重集为空")
+    assert len(valid_intervals) != 0
+
 """
 pW_0 = ProbablisticReachability.compute_interval_probs_weight(np.asarray(vW_0), marg=margin, mean=mW_0, std=dW_0)
 pb_0 = ProbablisticReachability.compute_interval_probs_bias(np.asarray(vb_0), marg=margin, mean=mb_0, std=db_0)
@@ -165,7 +168,7 @@ if margin != 0:
 
 else:
     ph1 = 0.0
-print(ph1)
+print("ph1: ", ph1)
 stop = time.time()
 
 elapsed = stop - start

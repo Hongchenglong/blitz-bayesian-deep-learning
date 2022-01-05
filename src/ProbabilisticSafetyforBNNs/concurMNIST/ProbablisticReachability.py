@@ -212,10 +212,10 @@ def interval_bound_propagation_VCAS(a):
             # If so, do interval propagation
             ###############################################################################
             h_l, h_u = propagate_interval(sW_0[i], dW_0, sb_0[i], db_0, x_l, x_u, w_margin)
-            if act == 'tanh':
-                h_l, h_u = np.tanh(h_l), np.tanh(h_u)
-            elif act == 'relu':
+            if act == 'relu':
                 h_l, h_u = my_relu(h_l), my_relu(h_u)
+            elif act == 'tanh':
+                h_l, h_u = np.tanh(h_l), np.tanh(h_u)
             y_pred_l, y_pred_u = propagate_interval(sW_1[i], dW_1, sb_1[i], db_1, h_l, h_u, w_margin)
             assert ((y_pred_l <= y).all())
             assert ((y_pred_u >= y).all())
@@ -224,7 +224,7 @@ def interval_bound_propagation_VCAS(a):
             safety_check = True
             value_ind = 0
             for value in y_pred_u:
-                if y_pred_l[out_ind] < value and value_ind != out_ind:
+                if y_pred_l[out_ind] < value and value_ind != out_ind:  # 如果 最终输出的下界<第i个预测的上界 且 i!=最终输出的索引: 则不安全
                     safety_check = False
                 value_ind += 1
             if safety_check:
@@ -232,9 +232,9 @@ def interval_bound_propagation_VCAS(a):
                 valid_weight_intervals.append([sW_0[i], sb_0[i], sW_1[i], sb_1[i]])
         else:
             err += 1
-            # print(np.argmax(y))
-            # print(y)
-            # print("Hm, incorrect prediction is worrying...")
+            print(np.argmax(y))
+            print(y)
+            print("Hm, incorrect prediction is worrying...")
             continue
     print("We found %s many valid intervals." % (len(valid_weight_intervals)))
     print("Pred error rate: %s/%s" % (err / float(search_samps), err))
