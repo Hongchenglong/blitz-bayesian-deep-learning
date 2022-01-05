@@ -1,25 +1,25 @@
-# import argparse
-# parser = argparse.ArgumentParser()
-# parser.add_argument("--imnum")
-# parser.add_argument("--eps")
-# parser.add_argument("--samples")
-# parser.add_argument("--width")
-# parser.add_argument("--margin")
-#
-# args = parser.parse_args()
-# image = int(args.imnum)
-# epsilon = float(args.eps)
-# iters = int(args.samples)
-# width = int(args.width)
-# margin = float(args.margin)
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("--imnum")
+parser.add_argument("--eps")
+parser.add_argument("--samples")
+parser.add_argument("--width")
+parser.add_argument("--margin")
+
+args = parser.parse_args()
+image = int(args.imnum)
+epsilon = float(args.eps)
+iters = int(args.samples)
+width = int(args.width)
+margin = float(args.margin)
 
 # python IBP-MNIST-Verify.py --imnum $IMNUM --eps 0.025 --samples 1250 --width 64 --margin 2.0
-image = 1  # 第i张图
-epsilon = 0.025  # 噪声
-iters = 1250
-# iters = 150
-width = 64
-margin = 2.0
+# image = 1  # 第i张图
+# epsilon = 0.025  # 噪声
+# iters = 25
+# width = 64
+# margin = 2.0
+
 nproc = 25
 
 # pickle提供了一个简单的持久化功能, 可以将对象以文件的形式存放在磁盘上。
@@ -47,9 +47,11 @@ y_test = tf.one_hot(y_test, 10)
 x = X_test[image]
 x1 = x
 inp = np.asarray(X_test[image])
-x_u = np.clip(inp + epsilon, 0, 1)
+x_u = np.clip(inp + epsilon, 0, 1)  # 限制在（0,1）
 x_l = np.clip(inp - epsilon, 0, 1)
 
+# 模拟一层BNN的输出
+## 导出一层BNN模型的权重和偏置
 model_path = "MNIST_Networks/VIMODEL_MNIST_1_%s_relu.net.npz" % width
 try:
     loaded_model = np.load(model_path, allow_pickle=True)
@@ -58,6 +60,7 @@ except:
     with open(model_path, 'rb') as pickle_file:
         [mW_0, mb_0, mW_1, mb_1, dW_0, db_0, dW_1, db_1] = pickle.load(pickle_file)
 
+## 对权重和偏置进行采样，生成search_samps个一层BNN的权重和偏置
 # First, sample and hope some weights satisfy the out_reg constraint
 search_samps = 150
 sW_0 = np.random.normal(mW_0, dW_0, (search_samps, mW_0.shape[0], mW_0.shape[1]))
@@ -65,6 +68,7 @@ sb_0 = np.random.normal(mb_0, db_0, (search_samps, mb_0.shape[0]))
 sW_1 = np.random.normal(mW_1, dW_1, (search_samps, mW_1.shape[0], mW_1.shape[1]))
 sb_1 = np.random.normal(mb_1, db_1, (search_samps, mb_1.shape[0]))
 
+## 前向传播
 y = np.zeros(10)
 for i in range(search_samps):
     y += (np.matmul(my_relu(np.matmul(x, sW_0[i]) + sb_0[i]), sW_1[i]) + sb_1[i])
@@ -75,7 +79,9 @@ print(y / float(search_samps))
 x_reg_1 = [x_l, x_u]
 out_cls = np.argmax(y)
 
+#
 ProbablisticReachability.set_model_path(model_path)
+## 对权重和偏置进行采样，生成iters个一层BNN的权重和偏置
 ProbablisticReachability.gen_samples(iters)
 import time
 
@@ -96,13 +102,13 @@ elapsed = stop - start
 print("len(valid_intervals): ", len(valid_intervals))
 print("valid_intervals: ", valid_intervals)
 
-if (len(valid_intervals) == 0):
+if len(valid_intervals) == 0:
     import logging
 
     ph1 = 0.0
     logging.basicConfig(filename="Runs%s.log" % width, level=logging.DEBUG)
-    logging.info("image=%s,width=%s,epsilon=%s,margin=%s,iters=%s,elapsed=%s,ph1=%s" % (
-    image, width, epsilon, margin, iters, elapsed, ph1))
+    logging.info("image=%s,width=%s,epsilon=%s,margin=%s,iters=%s,elapsed=%s,ph1=%s"
+                 % (image, width, epsilon, margin, iters, elapsed, ph1))
 
 vad_int = []
 vW_0 = []
