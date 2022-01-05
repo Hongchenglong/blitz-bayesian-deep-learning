@@ -7,7 +7,7 @@ with tf.compat.v1.Session() as sess:
     tf.compat.v1.global_variables_initializer().run()
 
 model_path = "ERR - NO MODEL SET. Call set_model_path function."
-# model_path = "MNIST_Networks/VIMODEL_MNIST_1_64_relu.net.npz"
+
 
 def set_model_path(m):
     global model_path
@@ -32,19 +32,17 @@ def gen_samples(iters):
     GLOBAL_samples = [sW_0, sb_0, sW_1, sb_1]
 
 
-"""
-Interval propogation in weight and input space. 
-@Variable W - the sampled weight that gave an output in the valid output region
-@Variable qW - the variational posterior weight matrix values (mean and variance)
-@Variable b - the sampled bias that gave an output in the valid output region
-@Variable qb - the variational posterior bias vector values (mean and variance)
-@Variable x_l - the lower bound of the input region
-@Variable x_u - the upper bound of the input region
-@Variable eps - the margin to propagate in the weight space (we add and subtract this value)
-"""
-
-
 def propagate_interval(W, W_std, b, b_std, x_l, x_u, eps):
+    """
+    Interval propogation in weight and input space.
+    @Variable W - the sampled weight that gave an output in the valid output region
+    @Variable qW - the variational posterior weight matrix values (mean and variance)
+    @Variable b - the sampled bias that gave an output in the valid output region
+    @Variable qb - the variational posterior bias vector values (mean and variance)
+    @Variable x_l - the lower bound of the input region
+    @Variable x_u - the upper bound of the input region
+    @Variable eps - the margin to propagate in the weight space (we add and subtract this value)
+    """
     W_l, W_u = W - (eps * W_std), W + (eps * W_std)  # Use eps as small symetric difference about the mean
     b_l, b_u = b - (eps * b_std), b + (eps * b_std)  # Use eps as small symetric difference about the mean
     h_max = np.zeros(len(W[0]))  # Placeholder variable for return value
@@ -78,16 +76,16 @@ def merge_intervals(intervals):
     return sorted_intervals[:interval_index + 1]
 
 
-"""
-Given a set of disjoint intervals, compute the probability of a random
-sample from a guassian falling in these intervals. (Taken from lemma)
-of the document
-"""
 import math
 from scipy.special import erf
 
 
 def compute_erf_prob(intervals, mean, stddev):
+    """
+    Given a set of disjoint intervals, compute the probability of a random
+    sample from a guassian falling in these intervals. (Taken from lemma)
+    of the document
+    """
     prob = 0.0
     for interval in intervals:
         val1 = erf((mean - interval[0]) / (math.sqrt(2) * (stddev)))
@@ -100,16 +98,14 @@ def compute_erf_prob(intervals, mean, stddev):
     return prob
 
 
-"""
-Given a set of possibly overlapping intervals:
-    - Merge all intervals into continuous, disjoint intervals
-    - compute probability of these disjoint intervals
-    - do this for ALL values in a weight matrix
-"""
-
-
 def compute_interval_probs_weight(vector_intervals, marg, mean, std):
-    means = mean;
+    """
+    Given a set of possibly overlapping intervals:
+        - Merge all intervals into continuous, disjoint intervals
+        - compute probability of these disjoint intervals
+        - do this for ALL values in a weight matrix
+    """
+    means = mean
     stds = std
     prob_vec = np.zeros(vector_intervals[0].shape)
     for i in range(len(vector_intervals[0])):
@@ -124,16 +120,14 @@ def compute_interval_probs_weight(vector_intervals, marg, mean, std):
     return np.asarray(prob_vec)
 
 
-"""
-Given a set of possibly overlapping intervals:
-    - Merge all intervals into continuous, disjoint intervals
-    - compute probability of these disjoint intervals
-    - do this for ALL values in a *flat* bias matrix (vector)
-"""
-
-
 def compute_interval_probs_bias(vector_intervals, marg, mean, std):
-    means = mean;
+    """
+    Given a set of possibly overlapping intervals:
+        - Merge all intervals into continuous, disjoint intervals
+        - compute probability of these disjoint intervals
+        - do this for ALL values in a *flat* bias matrix (vector)
+    """
+    means = mean
     stds = std
     prob_vec = np.zeros(vector_intervals[0].shape)
     for i in range(len(vector_intervals[0])):
@@ -162,26 +156,25 @@ def compute_single_prob(arg):
     return p
 
 
-"""
-Probabalistic Reachability for Bayesian Neural Networks - V 0.0.1 - Variable Margin
-@Variable x - the original input (not used, may delete)
-@Variable in_reg - a list [x_l, x_u] containing the region of interest in the input space
-@Variable out_reg - a list [y_l, y_u] containing the region of interest in the output space
-@Variable w_margin - a float value dictating the amount to add and subtract to create compact 
-                     set in the weight space given some valid sample from weight space
-@Variable search_samps - number of posterior samples to take in order to check for valid
-                         samples (i.e. samples that cause output to be in valid range)
-                         
-@Return - A valid lowerbound on the probability that the input region causes BNN  to give
-          ouput bounded by the output region. Converges to exact solution when margin is
-          small and samples goes to infinity.
-"""
-
 from my_utils import my_relu
 import pickle
 
 
 def interval_bound_propagation_VCAS(a):
+    """
+    Probabalistic Reachability for Bayesian Neural Networks - V 0.0.1 - Variable Margin
+    @Variable x - the original input (not used, may delete)
+    @Variable in_reg - a list [x_l, x_u] containing the region of interest in the input space
+    @Variable out_reg - a list [y_l, y_u] containing the region of interest in the output space
+    @Variable w_margin - a float value dictating the amount to add and subtract to create compact
+                         set in the weight space given some valid sample from weight space
+    @Variable search_samps - number of posterior samples to take in order to check for valid
+                             samples (i.e. samples that cause output to be in valid range)
+
+    @Return - A valid lowerbound on the probability that the input region causes BNN  to give
+              ouput bounded by the output region. Converges to exact solution when margin is
+              small and samples goes to infinity.
+    """
     global y
     x, in_reg, out_maximal, w_margin, search_samps, id = a
     act = 'relu'
@@ -199,10 +192,10 @@ def interval_bound_propagation_VCAS(a):
     # First, sample and hope some weights satisfy the out_reg constraint
     [sW_0, sb_0, sW_1, sb_1] = GLOBAL_samples
     print(id * search_samps, (id + 1) * search_samps)
-    sW_0 = sW_0[id * search_samps:(id + 1) * search_samps]
-    sb_0 = sb_0[id * search_samps:(id + 1) * search_samps]
-    sW_1 = sW_1[id * search_samps:(id + 1) * search_samps]
-    sb_1 = sb_1[id * search_samps:(id + 1) * search_samps]
+    sW_0 = sW_0[id * search_samps: (id + 1) * search_samps]
+    sb_0 = sb_0[id * search_samps: (id + 1) * search_samps]
+    sW_1 = sW_1[id * search_samps: (id + 1) * search_samps]
+    sb_1 = sb_1[id * search_samps: (id + 1) * search_samps]
     valid_weight_intervals = []
     err = 0
     for i in range(search_samps):
@@ -661,15 +654,13 @@ def propogate_lines(x, in_reg, sWs, sbs,
     return [curr_zeta_L, curr_zeta_U]
 
 
-"""
-A simple conversion from Andrea's outpt to the probablility... plus making it multiple
-samples. 
-"""
-
-
 def linear_propogation_VCAS(x, in_reg, out_ind,
                             w_margin=0.25, search_samps=500, act='relu',
                             reverse=False):
+    """
+    A simple conversion from Andrea's outpt to the probablility... plus making it multiple
+    samples.
+    """
     try:
         loaded_model = np.load(model_path, allow_pickle=True)
         [mW_0, mb_0, mW_1, mb_1, dW_0, db_0, dW_1, db_1] = loaded_model['arr_0']
