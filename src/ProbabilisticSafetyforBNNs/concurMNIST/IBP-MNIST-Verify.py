@@ -87,7 +87,7 @@ import time
 
 start = time.time()
 from multiprocessing import Pool
-## 得到最大安全权重集
+## 得到最大安全权重集(权重的区间)
 p = Pool(nproc)
 args = []
 for i in range(nproc):
