@@ -22,7 +22,7 @@ optimizer = optim.Adam(classifier.parameters(), lr=0.001)
 criterion = torch.nn.CrossEntropyLoss()
 
 iteration = 0
-for epoch in range(2):
+for epoch in range(10):
     print("epoch: ", epoch + 1)
     for i, (datapoints, labels) in enumerate(train_loader):
         datapoints = datapoints.reshape(-1, 28 * 28)
