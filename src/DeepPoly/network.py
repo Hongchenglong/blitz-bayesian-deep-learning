@@ -1,25 +1,10 @@
-import os
-
-os.environ['OPENBLAS_NUM_THREADS'] = '1'
 import numpy as np
-import cvxpy as cp
-import time
 from copy import deepcopy
-import multiprocessing as mp
-
-# from concurrent.futures import ProcessPoolExecutor, as_completed, wait
 
 """
 https://github.com/watson-developer-cloud/python-sdk/issues/418
 https://askubuntu.com/questions/637014/gcc-error-trying-to-exec-cc1plus-execvp-no-such-file-or-directory
 """
-
-
-def lpsolve(vars, cons, obj, solver=cp.GUROBI):
-    prob = cp.Problem(obj, cons)
-    prob.solve(solver=solver)
-    return prob.value
-
 
 class neuron(object):
     """
@@ -138,240 +123,6 @@ class network(object):
     def clear(self):
         for i in range(len(self.layers)):
             self.layers[i].clear()
-
-    def verify_lp_split(self, PROPERTY, DELTA, MAX_ITER=5, SPLIT_NUM=0, WORKERS=12, TRIM=False, SOLVER=cp.GUROBI,
-                        MODE=0, USE_OPT_2=False):
-        if SPLIT_NUM > self.inputSize:
-            SPLIT_NUM = self.inputSize
-        if self.property_flag == True:
-            self.layers.pop()
-            self.property_flag = False
-        self.load_robustness(PROPERTY, DELTA, TRIM=TRIM)
-        delta_list = [self.layers[0].neurons[i].concrete_upper - self.layers[0].neurons[i].concrete_lower for i in
-                      range(self.inputSize)]
-        self.clear()
-        self.deeppoly()
-        verify_layer = self.layers[-1]
-        verify_neuron_upper = np.array([neur.concrete_upper for neur in verify_layer.neurons])
-        verify_list = np.argsort(verify_neuron_upper)
-        for i in range(len(verify_list)):
-            if verify_neuron_upper[verify_list[i]] >= 0:
-                verify_list = verify_list[i:]
-                break
-        if verify_neuron_upper[verify_list[0]] < 0:
-            print("Property Verified")
-            if MODE == self.MODE_ROBUSTNESS:
-                return True
-            return
-        split_list = []
-        for i in range(2 ** SPLIT_NUM):
-            cur_split = []
-            for j in range(SPLIT_NUM):
-                if i & (2 ** j) == 0:
-                    cur_split.append([self.layers[0].neurons[j].concrete_lower, (
-                            self.layers[0].neurons[j].concrete_upper + self.layers[0].neurons[
-                        j].concrete_lower) / 2])
-                else:
-                    cur_split.append(
-                        [(self.layers[0].neurons[j].concrete_upper + self.layers[0].neurons[j].concrete_lower) / 2,
-                         self.layers[0].neurons[j].concrete_upper])
-            for j in range(SPLIT_NUM, self.inputSize):
-                cur_split.append([self.layers[0].neurons[j].concrete_lower, self.layers[0].neurons[j].concrete_upper])
-            split_list.append(cur_split)
-
-        obj = None
-        prob = None
-        constraints = None
-        variables = []
-        for i in range(len(self.layers)):
-            variables.append(cp.Variable(self.layers[i].size))
-        unsafe_set = set()
-        unsafe_set_deeppoly = set()
-        unsafe_area_list = np.zeros(len(split_list))
-        verified_list = []
-        verified_area = 0
-        for i in verify_list:
-            verification_neuron = self.layers[-1].neurons[i]
-            total_area = 0
-            for splits_num in range(len(split_list)):
-                splits = split_list[splits_num]
-                assert (len(splits) == self.inputSize)
-                for j in range(self.inputSize):
-                    self.layers[0].neurons[j].concrete_lower = splits[j][0]
-                    self.layers[0].neurons[j].concrete_algebra_lower = np.array([splits[j][0]])
-                    self.layers[0].neurons[j].algebra_lower = np.array([splits[j][0]])
-                    self.layers[0].neurons[j].concrete_upper = splits[j][1]
-                    self.layers[0].neurons[j].concrete_algebra_upper = np.array([splits[j][1]])
-                    self.layers[0].neurons[j].algebra_upper = np.array([splits[j][1]])
-                self.clear()
-                for j in range(MAX_ITER):
-                    self.deeppoly()
-                    print("Abstract Mode Changed:", self.abs_mode_changed)
-                    if (j == 0) and (verification_neuron.concrete_upper > 0):
-                        unsafe_set_deeppoly.add(splits_num)
-                    constraints = []
-                    # Build Constraints for each layer
-                    for k in range(len(self.layers)):
-                        cur_layer = self.layers[k]
-                        cur_neuron_list = cur_layer.neurons
-                        if cur_layer.layer_type == layer.INPUT_LAYER:
-                            for p in range(cur_layer.size):
-                                constraints.append(variables[k][p] >= cur_neuron_list[p].concrete_lower)
-                                constraints.append(variables[k][p] <= cur_neuron_list[p].concrete_upper)
-                        elif cur_layer.layer_type == layer.AFFINE_LAYER:
-                            assert (k > 0)
-                            for p in range(cur_layer.size):
-                                constraints.append(
-                                    variables[k][p] == cur_neuron_list[p].weight @ variables[k - 1] + cur_neuron_list[
-                                        p].bias)
-                        elif cur_layer.layer_type == layer.RELU_LAYER:
-                            assert (cur_layer.size == self.layers[k - 1].size)
-                            assert (k > 0)
-                            for p in range(cur_layer.size):
-                                constraints.append(
-                                    variables[k][p] <= cur_neuron_list[p].algebra_upper[:-1] @ variables[k - 1] +
-                                    cur_neuron_list[p].algebra_upper[-1])
-                                # constraints.append(variables[k][p]>=cur_neuron_list[p].algebra_lower[:-1]@variables[k-1]+cur_neuron_list[p].algebra_lower[-1])
-                                # Modified:using two lower bounds
-                                constraints.append(variables[k][p] >= 0)
-                                constraints.append(variables[k][p] >= variables[k - 1][p])
-                    # Build the verification neuron constraint
-                    for k in verified_list:
-                        constraints.append(variables[-1][k] <= 0)
-                    # Modified:If MODE IS ROBUSTNESS AND USE_OPT_2 IS TRUE THEN CONSTRAINTS CAN BE ==0
-                    if MODE == self.MODE_ROBUSTNESS and USE_OPT_2 == True:
-                        constraints.append(variables[-1][i] == 0)
-                    else:
-                        constraints.append(variables[-1][i] >= 0)
-
-                    # Check the feasibility
-                    prob = cp.Problem(cp.Maximize(0), constraints)
-                    prob.solve(solver=SOLVER)
-                    if prob.status != cp.OPTIMAL:
-                        print("Split:", splits_num, "Infeasible")
-                        break
-
-                    # Refresh the input layer bounds
-                    mppool = mp.Pool(WORKERS)
-                    tasklist = []
-                    input_neurons = self.layers[0].neurons
-                    for k in range(self.inputSize):
-                        obj = cp.Minimize(variables[0][k])
-                        # Below using mp Pool
-                        tasklist.append((variables, constraints, obj, SOLVER))
-                        obj = cp.Maximize(variables[0][k])
-                        # Below using mp Pool
-                        tasklist.append((variables, constraints, obj, SOLVER))
-                    # Below using mp Pool
-                    resultlist = mppool.starmap(lpsolve, tasklist)
-                    mppool.terminate()
-                    for k in range(self.inputSize):
-                        if resultlist[k * 2] >= input_neurons[k].concrete_lower:
-                            input_neurons[k].concrete_lower = resultlist[k * 2]
-                            input_neurons[k].concrete_algebra_lower = np.array([resultlist[k * 2]])
-                            input_neurons[k].algebra_lower = np.array([resultlist[k * 2]])
-                        #
-                        if resultlist[k * 2 + 1] <= input_neurons[k].concrete_upper:
-                            input_neurons[k].concrete_upper = resultlist[k * 2 + 1]
-                            input_neurons[k].concrete_algebra_upper = np.array([resultlist[k * 2 + 1]])
-                            input_neurons[k].algebra_upper = np.array([resultlist[k * 2 + 1]])
-
-                    # Refresh the uncertain ReLu's lowerbound
-                    mppool = mp.Pool(WORKERS)
-                    count = 0
-                    tasklist = []
-                    for k in range(len(self.layers) - 1):
-                        cur_layer = self.layers[k]
-                        next_layer = self.layers[k + 1]
-                        if cur_layer.layer_type == layer.AFFINE_LAYER and next_layer.layer_type == layer.RELU_LAYER:
-                            assert (cur_layer.size == next_layer.size)
-                            for p in range(cur_layer.size):
-                                if next_layer.neurons[p].certain_flag == 0:
-                                    obj = cp.Minimize(variables[k][p])
-                                    # Below using mp Pool
-                                    tasklist.append((variables, constraints, obj, SOLVER))
-                    # Below using mp Pool
-                    resultlist = mppool.starmap(lpsolve, tasklist)
-                    mppool.terminate()
-                    index = 0
-                    for k in range(len(self.layers) - 1):
-                        cur_layer = self.layers[k]
-                        next_layer = self.layers[k + 1]
-                        if cur_layer.layer_type == layer.AFFINE_LAYER and next_layer.layer_type == layer.RELU_LAYER:
-                            assert (cur_layer.size == next_layer.size)
-                            for p in range(cur_layer.size):
-                                if next_layer.neurons[p].certain_flag == 0:
-                                    if resultlist[index] > cur_layer.neurons[p].concrete_highest_lower:
-                                        cur_layer.neurons[p].concrete_highest_lower = resultlist[index]
-                                    if resultlist[index] >= 0:
-                                        next_layer.neurons[p].certain_flag = 1
-                                        count += 1
-                                    index += 1
-
-                    # Refresh the uncertain ReLu's upperbound
-                    mppool = mp.Pool(WORKERS)
-                    tasklist = []
-                    for k in range(len(self.layers) - 1):
-                        cur_layer = self.layers[k]
-                        next_layer = self.layers[k + 1]
-                        if cur_layer.layer_type == layer.AFFINE_LAYER and next_layer.layer_type == layer.RELU_LAYER:
-                            assert (cur_layer.size == next_layer.size)
-                            for p in range(cur_layer.size):
-                                if next_layer.neurons[p].certain_flag == 0:
-                                    obj = cp.Maximize(variables[k][p])
-                                    # Below using mp Pool
-                                    tasklist.append((variables, constraints, obj, SOLVER))
-                    # Below using mp Pool
-                    resultlist = mppool.starmap(lpsolve, tasklist)
-                    mppool.terminate()
-                    index = 0
-                    for k in range(len(self.layers) - 1):
-                        cur_layer = self.layers[k]
-                        next_layer = self.layers[k + 1]
-                        if cur_layer.layer_type == layer.AFFINE_LAYER and next_layer.layer_type == layer.RELU_LAYER:
-                            assert (cur_layer.size == next_layer.size)
-                            for p in range(cur_layer.size):
-                                if next_layer.neurons[p].certain_flag == 0:
-                                    if resultlist[index] < cur_layer.neurons[p].concrete_lowest_upper:
-                                        cur_layer.neurons[p].concrete_lowest_upper = resultlist[index]
-                                    if resultlist[index] <= 0:
-                                        next_layer.neurons[p].certain_flag = 2
-                                        count += 1
-                                    index += 1
-                    print('Refreshed ReLu nodes:', count)
-
-                if prob.status == cp.OPTIMAL:
-                    area = 1
-                    for j in range(self.inputSize):
-                        area *= (self.layers[0].neurons[j].concrete_upper - self.layers[0].neurons[j].concrete_lower) / \
-                                delta_list[j]
-                    print("Split:", splits_num, "Area:", area * 100)
-                    if area > 0:
-                        if MODE == self.MODE_ROBUSTNESS:
-                            return False
-                        unsafe_area_list[splits_num] += area
-                        unsafe_set.add(splits_num)
-                        total_area += area
-            print('verification neuron:', i, 'Unsafe Overapproximate(Box)%:', total_area * 100)
-            verified_area += total_area
-            verified_list.append(i)
-        print('Overall Unsafe Overapproximate(Area)%', verified_area * 100)
-        verified_area = 0
-        for i in unsafe_area_list:
-            if i > 1 / len(unsafe_area_list):
-                verified_area += 1 / len(unsafe_area_list)
-            else:
-                verified_area += i
-        print('Overall Unsafe Overapproximate(Smart Area)%', verified_area * 100)
-        print('Overall Unsafe Overapproximate(Box)%:', len(unsafe_set) / len(split_list) * 100)
-        print('Overall Unsafe Overapproximate(Deeppoly)%:', len(unsafe_set_deeppoly) / len(split_list) * 100)
-        if MODE == self.MODE_ROBUSTNESS:
-            return True
-        if MODE == self.MODE_QUANTITIVE:
-            if verified_area < len(unsafe_set) / len(split_list):
-                return [verified_area * 100, len(unsafe_set_deeppoly) / len(split_list) * 100]
-            else:
-                return [len(unsafe_set) / len(split_list) * 100, len(unsafe_set_deeppoly) / len(split_list) * 100]
 
     def deeppoly(self):
 
@@ -748,40 +499,6 @@ class network(object):
         self.numLayers = len(layersize) - 1
         pass
 
-    def find_max_disturbance(self, PROPERTY, L=0, R=1000, TRIM=False):
-        ans = 0
-        while L <= R:
-            # print(L,R)
-            mid = int((L + R) / 2)
-            self.load_robustness(PROPERTY, mid / 1000, TRIM=TRIM)
-            self.clear()
-            self.deeppoly()
-            flag = True
-            for neuron_i in self.layers[-1].neurons:
-                # print(neuron_i.concrete_upper)
-                if neuron_i.concrete_upper > 0:
-                    flag = False
-            if flag == True:
-                ans = mid / 1000
-                L = mid + 1
-            else:
-                R = mid - 1
-        return ans
-
-    def find_max_disturbance_lp(self, PROPERTY, L, R, TRIM, WORKERS=12, SOLVER=cp.GUROBI):
-        ans = L
-        while L <= R:
-            mid = int((L + R) / 2)
-            if self.verify_lp_split(PROPERTY=PROPERTY, DELTA=mid / 1000, MAX_ITER=5, SPLIT_NUM=0, WORKERS=WORKERS,
-                                    TRIM=TRIM, SOLVER=SOLVER, MODE=1):
-                print("Disturbance:", mid / 1000, "Success!")
-                ans = mid / 1000
-                L = mid + 1
-            else:
-                print("Disturbance:", mid / 1000, "Failed!")
-                R = mid - 1
-        return ans
-
 def ex2():
     # # Experiment No.2
     # # Below shows Robustness verification performance
@@ -789,7 +506,8 @@ def ex2():
     # # Notice: you can try different net, property and delta. (FNN4, property0-49, 0.037), (FNN5, property0-49, 0.026), (FNN6, property0-49, 0.021), (FNN7, property0-49, 0.015) is used in paper.
     # # Notice: you can try different MAX_ITER to check how iteration numbers affect experiment results.
     # # Warning: To do batch verification in large nets is time consuming. Try FNN4 if you want to do quick reproducing.
-    rlv = 'rlv/caffeprototxt_AI2_MNIST_FNN_4_testNetworkB.rlv'
+    # rlv = 'rlv/caffeprototxt_AI2_MNIST_FNN_4_testNetworkB.rlv'
+    rlv = 'rlv/HybridNN_layer3_epochs1.pth.rlv'
     property = 'properties/mnist_0_local_property.in'
     delta = 0.037
     net = network()

@@ -216,6 +216,7 @@ def interval_bound_propagation_VCAS(a):
                 h_l, h_u = my_relu(h_l), my_relu(h_u)
             elif act == 'tanh':
                 h_l, h_u = np.tanh(h_l), np.tanh(h_u)
+            # 输出y的区间
             y_pred_l, y_pred_u = propagate_interval(sW_1[i], dW_1, sb_1[i], db_1, h_l, h_u, w_margin)
             assert ((y_pred_l <= y).all())
             assert ((y_pred_u >= y).all())

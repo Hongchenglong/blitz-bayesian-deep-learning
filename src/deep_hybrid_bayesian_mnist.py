@@ -22,7 +22,8 @@ optimizer = optim.Adam(classifier.parameters(), lr=0.001)
 criterion = torch.nn.CrossEntropyLoss()
 
 iteration = 0
-for epoch in range(10):
+epochs = 1
+for epoch in range(epochs):
     print("epoch: ", epoch + 1)
     for i, (datapoints, labels) in enumerate(train_loader):
         datapoints = datapoints.reshape(-1, 28 * 28)
@@ -55,7 +56,7 @@ for epoch in range(10):
                   'on the 10000 test images: {} %'.format(str(iteration), str(100 * correct / total)))
 
 
-PATH = '../NNs/HybridNN.pth'
+PATH = '../NNs/HybridNN_layer%d_epochs%d.pth' % (3, epochs)
 torch.save(classifier.state_dict(), PATH)
 
 print("over")

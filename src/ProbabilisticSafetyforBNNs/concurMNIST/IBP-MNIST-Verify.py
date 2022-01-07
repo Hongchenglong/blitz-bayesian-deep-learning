@@ -58,7 +58,7 @@ try:
     [mW_0, mb_0, mW_1, mb_1, dW_0, db_0, dW_1, db_1] = loaded_model['arr_0']
 except:
     with open(model_path, 'rb') as pickle_file:
-        [mW_0, mb_0, mW_1, mb_1, dW_0, db_0, dW_1, db_1] = pickle.load(pickle_file)
+        [mW_0, mb_0, mW_1, mb_1, dW_0, db_0, dW_1, db_1] = pickle.load(pickle_file)  # 均值、标准差
 
 ## 对权重和偏置进行采样，生成search_samps个一层BNN的权重和偏置
 # First, sample and hope some weights satisfy the out_reg constraint
