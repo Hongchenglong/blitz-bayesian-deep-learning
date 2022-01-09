@@ -1,23 +1,19 @@
 import numpy as np
 from copy import deepcopy
 
-"""
-https://github.com/watson-developer-cloud/python-sdk/issues/418
-https://askubuntu.com/questions/637014/gcc-error-trying-to-exec-cc1plus-execvp-no-such-file-or-directory
-"""
 
 class neuron(object):
     """
     Attributes:
-        algebra_lower (numpy ndarray of float): neuron's algebra lower bound(coeffients of previous neurons and a constant) 
+        algebra_lower (numpy ndarray of float): neuron's algebra lower bound(coeffients of previous neurons and a constant)
         algebra_upper (numpy ndarray of float): neuron's algebra upper bound(coeffients of previous neurons and a constant)
-        concrete_algebra_lower (numpy ndarray of float): neuron's algebra lower bound(coeffients of input neurons and a constant) 
+        concrete_algebra_lower (numpy ndarray of float): neuron's algebra lower bound(coeffients of input neurons and a constant)
         concrete_algebra_upper (numpy ndarray of float): neuron's algebra upper bound(coeffients of input neurons and a constant)
         concrete_lower (float): neuron's concrete lower bound
         concrete_upper (float): neuron's concrete upper bound
         concrete_highest_lower (float): neuron's highest concrete lower bound
         concrete_lowest_upper (float): neuron's lowest concrete upper bound
-        weight (numpy ndarray of float): neuron's weight        
+        weight (numpy ndarray of float): neuron's weight
         bias (float): neuron's bias
         certain_flag (int): 0 uncertain 1 activated(>=0) 2 deactivated(<=0)
         prev_abs_mode (int): indicates abstract mode of relu nodes in previous iteration.0 use first,1 use second
@@ -140,7 +136,7 @@ class network(object):
                 assert (self.layers[k].size + 1 == len(upper_bound))
                 for p in range(self.layers[k].size):
                     if lower_bound[p] >= 0:
-                        # print(lower_bound[p]*self.layers[k].neurons[p].algebra_lower)                                 
+                        # print(lower_bound[p]*self.layers[k].neurons[p].algebra_lower)
                         tmp_lower += lower_bound[p] * self.layers[k].neurons[p].algebra_lower
                     else:
                         # print(lower_bound[p]*self.layers[k].neurons[p].algebra_upper)
@@ -239,7 +235,14 @@ class network(object):
                         cur_neuron.algebra_upper[j] = aux
                         cur_neuron.algebra_upper[-1] = -aux * pre_neuron.concrete_highest_lower
                         pre(cur_neuron, i)
-        pass
+        # 第二个隐藏层的输出区间
+        lower = []
+        upper = []
+        neurons = self.layers[4].neurons
+        for n in neurons:
+            lower.append(n.concrete_lower)
+            upper.append(n.concrete_upper)
+        return lower, upper
 
     def print(self):
         print('numlayers:%d' % (self.numLayers))
@@ -333,6 +336,14 @@ class network(object):
             verify_layer.layer_type = layer.AFFINE_LAYER
             if len(verify_layer.neurons) > 0:
                 self.layers.append(verify_layer)
+        # 输入层加入扰动的区间
+        lower = []
+        upper = []
+        neurons = self.layers[0].neurons
+        for n in neurons:
+            lower.append(n.concrete_lower)
+            upper.append(n.concrete_upper)
+        return lower, upper
 
     def load_nnet(self, filename):
         with open(filename) as f:
@@ -499,46 +510,3 @@ class network(object):
         self.outputSize = layersize[-1]
         self.numLayers = len(layersize) - 1
         pass
-
-def ex2():
-    # # Experiment No.2
-    # # Below shows Robustness verification performance
-    # # Notice: you can try different number for WORKER according to your working environment.
-    # # Notice: you can try different net, property and delta. (FNN4, property0-49, 0.037), (FNN5, property0-49, 0.026), (FNN6, property0-49, 0.021), (FNN7, property0-49, 0.015) is used in paper.
-    # # Notice: you can try different MAX_ITER to check how iteration numbers affect experiment results.
-    # # Warning: To do batch verification in large nets is time consuming. Try FNN4 if you want to do quick reproducing.
-    # rlv = 'rlv/caffeprototxt_AI2_MNIST_FNN_4_testNetworkB.rlv'
-    rlv = 'rlv/HybridNN_layer3_epochs1.pth.rlv'
-    property = 'mnist/mnist_0_local_property.in'
-    delta = 0.037
-    # net = network()
-    # net.load_rlv(rlv)
-    # net.clear()
-    # net.load_robustness(property, delta, TRIM=True)
-    # net.deeppoly()
-    # print("ex2 over")
-
-    net = network()
-    net.load_rlv(rlv)
-    count_deeppoly = 0
-    print('Verifying Network:', rlv)
-    net.clear()
-    net.load_robustness(property, delta, TRIM=True)
-    net.deeppoly()
-    flag = True
-    for neuron_i in net.layers[-1].neurons:
-        # print(neuron_i.concrete_upper)
-        if neuron_i.concrete_upper > 0:
-            flag = False
-    if flag == True:
-        count_deeppoly += 1
-        print(property, 'DeepPoly Success!')
-    else:
-        print(property, 'DeepPoly Failed!')
-
-    print('DeepPoly Verified:', count_deeppoly)
-
-
-
-if __name__ == "__main__":
-    ex2()

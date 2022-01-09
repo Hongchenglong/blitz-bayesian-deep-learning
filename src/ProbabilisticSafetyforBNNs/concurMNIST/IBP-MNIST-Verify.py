@@ -16,11 +16,13 @@
 # python IBP-MNIST-Verify-Test.py --imnum $IMNUM --eps 0.025 --samples 1250 --width 64 --margin 2.0
 image = 1  # 第i张图
 epsilon = 0.025  # 噪声
-iters = 500
+# iters = 500
+iters = 5
 width = 64
 margin = 2.0
 
-nproc = 25
+# nproc = 25
+nproc = 5
 
 # pickle提供了一个简单的持久化功能, 可以将对象以文件的形式存放在磁盘上。
 import pickle

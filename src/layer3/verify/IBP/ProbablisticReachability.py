@@ -1,10 +1,16 @@
+import pickle
 import numpy as np
 from tqdm import trange
 import tensorflow as tf
+from multiprocessing import Pool
 
 # 初始化模型的参数
 with tf.compat.v1.Session() as sess:
     tf.compat.v1.global_variables_initializer().run()
+
+def my_relu(arr):
+    arr = arr * (arr > 0)
+    return arr
 
 model_path = "ERR - NO MODEL SET. Call set_model_path function."
 
@@ -156,11 +162,9 @@ def compute_single_prob(arg):
     return p
 
 
-from my_utils import my_relu
-import pickle
 
 
-def interval_bound_propagation_VCAS(a):
+def interval_bound_propagation(a):
     """
     Probabalistic Reachability for Bayesian Neural Networks - V 0.0.1 - Variable Margin
     @Variable x - the original input (not used, may delete)
@@ -177,7 +181,6 @@ def interval_bound_propagation_VCAS(a):
     """
     global y
     x, in_reg, out_maximal, w_margin, search_samps, id = a
-    act = 'relu'
     reverse = False
     x = np.asarray(x)
     x = x.astype('float64')
@@ -247,33 +250,6 @@ def interval_bound_propagation_VCAS(a):
     """
     return valid_weight_intervals
 
-    """
-     everything after this is now not running
-    """
-    # After we merge them, we need to use the erf function to evaluate exactly what the 
-    #   lower bound on the probability is!
-    pW_0 = compute_interval_probs_weight(np.asarray(vW_0), marg=w_margin, mean=mW_0, std=dW_0)
-    pb_0 = compute_interval_probs_bias(np.asarray(vb_0), marg=w_margin, mean=mb_0, std=db_0)
-    pW_1 = compute_interval_probs_weight(np.asarray(vW_1), marg=w_margin, mean=mW_1, std=dW_1)
-    pb_1 = compute_interval_probs_bias(np.asarray(vb_1), marg=w_margin, mean=mb_1, std=db_1)
-
-    # Now that we have all of the probabilities we just need to multiply them out to get
-    # the final lower bound on the probability of the condition holding.
-    # Work with these probabilities in log space
-    p = 0.0
-    for i in pW_0.flatten():
-        p += math.log(i)
-    for i in pb_0.flatten():
-        p += math.log(i)
-    for i in pW_1.flatten():
-        p += math.log(i)
-    for i in pb_1.flatten():
-        p += math.log(i)
-    # print(math.exp(p))
-    return math.exp(p)
-
-
-from multiprocessing import Pool
 
 
 def compute_all_intervals_proc(a):
