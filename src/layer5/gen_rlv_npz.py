@@ -1,16 +1,8 @@
-from src.HybridNN import HybridNN
-import numpy as np
+from src.layer5.HybridNN import HybridNN
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-import torchvision
-import torchvision.datasets as dsets
-import torchvision.transforms as transforms
-
 
 net = HybridNN()
-PATH = '../NNs/HybridNN_layer3_epochs1.pth'
+PATH = '../../NNs/HybridNN_layer3_epochs1.pth'
 pre_weights = torch.load(PATH)
 
 f = open("DeepPoly/rlv/HybridNN_layer3_epochs1.pth.rlv", "a")

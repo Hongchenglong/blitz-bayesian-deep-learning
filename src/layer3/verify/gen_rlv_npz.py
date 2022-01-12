@@ -51,10 +51,10 @@ pre_weights = torch.load(PATH)
 
 print("npz start")
 np.savez("./IBP/npz/%s.npz" % name,
-         pre_weights['fc1.weight'].T, pre_weights['fc1.bias'],
-         pre_weights['fc2.weight'].T, pre_weights['fc2.bias'],
-         pre_weights['fc3.weight_mu'].T, pre_weights['fc3.weight_rho'],
-         pre_weights['fc3.bias_mu'].T, pre_weights['fc3.bias_rho'])
+         np.asarray(pre_weights['fc1.weight'].T, dtype='float32'), np.asarray(pre_weights['fc1.bias']),
+         np.asarray(pre_weights['fc2.weight'].T, dtype='float32'), np.asarray(pre_weights['fc2.bias'], dtype='float32'),
+         np.asarray(pre_weights['fc3.weight_mu'].T, dtype='float32'), np.asarray(pre_weights['fc3.weight_rho'].T, dtype='float32'),
+         np.asarray(pre_weights['fc3.bias_mu'].T, dtype='float32'), np.asarray(pre_weights['fc3.bias_rho'], dtype='float32'))
 print("npz end")
 
 

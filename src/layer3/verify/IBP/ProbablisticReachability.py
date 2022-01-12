@@ -25,17 +25,13 @@ GLOBAL_samples = "lollol"
 
 def gen_samples(iters):
     global GLOBAL_samples
-    try:
-        loaded_model = np.load(model_path, allow_pickle=True)
-        [mW_0, mb_0, mW_1, mb_1, dW_0, db_0, dW_1, db_1] = loaded_model['arr_0']
-    except:
-        with open(model_path, 'rb') as pickle_file:
-            [mW_0, mb_0, mW_1, mb_1, dW_0, db_0, dW_1, db_1] = pickle.load(pickle_file)
-    sW_0 = np.random.normal(mW_0, dW_0, (iters, mW_0.shape[0], mW_0.shape[1]))
-    sb_0 = np.random.normal(mb_0, db_0, (iters, mb_0.shape[0]))
-    sW_1 = np.random.normal(mW_1, dW_1, (iters, mW_1.shape[0], mW_1.shape[1]))
-    sb_1 = np.random.normal(mb_1, db_1, (iters, mb_1.shape[0]))
-    GLOBAL_samples = [sW_0, sb_0, sW_1, sb_1]
+    loaded_model = np.load(model_path, allow_pickle=True)
+    [fc1_w, fc1_b, fc2_w, fc2_b, fc3_w_mu, fc3_w_rho, fc3_b_mu, fc3_b_rho] = \
+        loaded_model['arr_0'], loaded_model['arr_1'], loaded_model['arr_2'], loaded_model['arr_3'], \
+        loaded_model['arr_4'], loaded_model['arr_5'], loaded_model['arr_6'], loaded_model['arr_7']
+    fc3_w = np.random.normal(fc3_w_mu, fc3_w_rho ** 2, (iters, fc3_w_mu.shape[0], fc3_w_mu.shape[1]))
+    fc3_b = np.random.normal(fc3_b_mu, fc3_b_rho ** 2, (iters, fc3_b_mu.shape[0]))
+    GLOBAL_samples = [fc3_w, fc3_b]
 
 
 def propagate_interval(W, W_std, b, b_std, x_l, x_u, eps):
@@ -180,40 +176,37 @@ def interval_bound_propagation(a):
               small and samples goes to infinity.
     """
     global y
-    x, in_reg, out_maximal, w_margin, search_samps, id = a
+    x, in_reg, relu2_l, relu2_u, out_maximal, w_margin, search_samps, id = a
     reverse = False
     x = np.asarray(x)
     x = x.astype('float64')
     x_l, x_u = in_reg[0], in_reg[1]
     out_ind = out_maximal
-    try:
-        loaded_model = np.load(model_path, allow_pickle=True)
-        [mW_0, mb_0, mW_1, mb_1, dW_0, db_0, dW_1, db_1] = loaded_model['arr_0']
-    except:
-        with open(model_path, 'rb') as pickle_file:
-            [mW_0, mb_0, mW_1, mb_1, dW_0, db_0, dW_1, db_1] = pickle.load(pickle_file)
+    loaded_model = np.load(model_path, allow_pickle=True)
+    [fc1_w, fc1_b, fc2_w, fc2_b, fc3_w_mu, fc3_w_rho, fc3_b_mu, fc3_b_rho] = \
+        loaded_model['arr_0'], loaded_model['arr_1'], loaded_model['arr_2'], loaded_model['arr_3'], \
+        loaded_model['arr_4'], loaded_model['arr_5'], loaded_model['arr_6'], loaded_model['arr_7']
     # First, sample and hope some weights satisfy the out_reg constraint
-    [sW_0, sb_0, sW_1, sb_1] = GLOBAL_samples
+    [fc3_w, fc3_b] = GLOBAL_samples
     print(id * search_samps, (id + 1) * search_samps)
-    sW_0 = sW_0[id * search_samps: (id + 1) * search_samps]
-    sb_0 = sb_0[id * search_samps: (id + 1) * search_samps]
-    sW_1 = sW_1[id * search_samps: (id + 1) * search_samps]
-    sb_1 = sb_1[id * search_samps: (id + 1) * search_samps]
+    fc3_w = fc3_w[id * search_samps: (id + 1) * search_samps]
+    fc3_b = fc3_b[id * search_samps: (id + 1) * search_samps]
     valid_weight_intervals = []
     err = 0
+    x1 = my_relu(np.matmul(x, fc1_w) + fc1_b)
+    x2 = my_relu(np.matmul(x1, fc2_w) + fc2_b)
     for i in range(search_samps):
         # Full forward pass in one line :-)
-        y = (np.matmul(my_relu(np.matmul(x, sW_0[i]) + sb_0[i]), sW_1[i]) + sb_1[i])
+        y = np.matmul(x2, fc3_w[i]) + fc3_b[i]
         # Logical check if weights sample out_reg constraint
         # print(sW_0[i][0][0])
         extra_gate = (reverse and np.argmax(y) != out_ind)
         if (np.argmax(y) == out_ind or extra_gate):
             # If so, do interval propagation
             ###############################################################################
-            h_l, h_u = propagate_interval(sW_0[i], dW_0, sb_0[i], db_0, x_l, x_u, w_margin)
-            h_l, h_u = my_relu(h_l), my_relu(h_u)
+            h_l, h_u = relu2_l, relu2_u
             # 输出y的区间
-            y_pred_l, y_pred_u = propagate_interval(sW_1[i], dW_1, sb_1[i], db_1, h_l, h_u, w_margin)
+            y_pred_l, y_pred_u = propagate_interval(fc3_w[i], fc3_w_rho, fc3_b[i], fc3_b_rho, h_l, h_u, w_margin)
             assert ((y_pred_l <= y).all())
             assert ((y_pred_u >= y).all())
             # Check if interval propagation still respects out_reg constraint
@@ -226,7 +219,7 @@ def interval_bound_propagation(a):
                 value_ind += 1
             if safety_check:
                 # If it does, add the weight to the set of valid weights
-                valid_weight_intervals.append([sW_0[i], sb_0[i], sW_1[i], sb_1[i]])
+                valid_weight_intervals.append([fc3_w[i], fc3_b[i]])
         else:
             err += 1
             print(np.argmax(y))

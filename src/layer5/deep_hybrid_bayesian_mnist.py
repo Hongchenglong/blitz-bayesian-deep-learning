@@ -1,13 +1,9 @@
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 import torchvision.datasets as dsets
 import torchvision.transforms as transforms
 
-from blitz.modules import BayesianLinear
-from blitz.utils import variational_estimator
-from src.HybridNN import HybridNN
+from src.layer5.HybridNN import HybridNN
 
 train_dataset = dsets.MNIST(root="../data", train=True, transform=transforms.ToTensor(), download=True)
 train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=64, shuffle=True)
