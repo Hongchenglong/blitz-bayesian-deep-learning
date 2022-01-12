@@ -3,7 +3,7 @@ import numpy as np
 from src.layer3.train.HybridNN import HybridNN
 
 net = HybridNN()
-name = 'HybridNN_2d2b_width64_epochs3'
+name = 'HybridNN_d2b2_width64_epochs3'
 PATH = '../train/pth/%s.pth' % name
 pre_weights = torch.load(PATH)
 

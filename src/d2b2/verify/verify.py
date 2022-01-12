@@ -179,7 +179,7 @@ if __name__ == "__main__":
     # image = 5
     for image in range(2, 3):
         print("image: ", image)
-        name = 'HybridNN_2d2b_width%s_epochs3' % width
+        name = 'HybridNN_d2b2_width%s_epochs3' % width
         rlv = './deepPoly/rlv/%s.pth.rlv' % name
         mnist = '../../mnist/mnist_%s_local_property.in' % image
         x = mnist_test_point(mnist)
