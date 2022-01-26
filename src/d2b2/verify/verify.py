@@ -48,8 +48,8 @@ def IBP_p(image, x, x_l, x_u, relu2_l, relu2_u, width, npz, model_path):
     nproc = 25
     margin = 2.0
 
-    # 模拟一层BNN的输出
-    ## 导出一层BNN模型的权重和偏置
+    # 模拟神经网络的输出
+    ## 导出模型的权重和偏置
     loaded_model = np.load(model_path, allow_pickle=True)
     # 权重，偏差，均值，标准差
     [fc1_w, fc1_b, fc2_w, fc2_b, mW_0, mb_0, mW_1, mb_1, dW_0, db_0, dW_1, db_1] = \
@@ -60,7 +60,7 @@ def IBP_p(image, x, x_l, x_u, relu2_l, relu2_u, width, npz, model_path):
     # 对权重和偏置进行采样，生成search_samps个一层BNN的权重和偏置
     # First, sample and hope some weights satisfy the out_reg constraint
     search_samps = 150
-    sW_0 = []; sb_0 = []; sW_1 = []; sb_1 = [];
+    sW_0, sb_0, sW_1, sb_1 = [], [], [], []
     for i in range(search_samps):
         weight_sampler = TrainableRandomDistribution(torch.from_numpy(mW_0), torch.from_numpy(dW_0))
         sW_0.append(weight_sampler.sample().detach().numpy())
@@ -164,6 +164,9 @@ def IBP_p(image, x, x_l, x_u, relu2_l, relu2_u, width, npz, model_path):
 
 
 def mnist_test_point(filename):
+    """
+    获取mnist测试图片的784个像素点
+    """
     x = []
     with open(filename) as f:
         for i in range(784):
@@ -180,11 +183,12 @@ if __name__ == "__main__":
     for image in range(2, 3):
         print("image: ", image)
         name = 'HybridNN_d2b2_width%s_epochs3' % width
-        rlv = './deepPoly/rlv/%s.pth.rlv' % name
+        # name = 'HybridNN_d2b2_64_784_width64_epochs3'
+        rlv = './deepPoly/rlv/%s.pth.rlv' % name  # deepPoly所需的权重文件
         mnist = '../../mnist/mnist_%s_local_property.in' % image
-        x = mnist_test_point(mnist)
         x_l, x_u, relu2_l, relu2_u = deepPoly_interval(rlv, mnist, epsilon)
 
+        x = mnist_test_point(mnist)  # 测试点
         npz = '%s.npz' % name
-        model_path = "./IBP/npz/%s" % npz
+        model_path = "./IBP/npz/%s" % npz  # IBP所需的权重文件
         p = IBP_p(image, x, x_l, x_u, relu2_l, relu2_u, width, npz, model_path)

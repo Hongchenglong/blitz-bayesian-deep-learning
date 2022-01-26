@@ -3,10 +3,11 @@ import numpy as np
 from src.layer3.train.HybridNN import HybridNN
 
 net = HybridNN()
-name = 'HybridNN_d2b2_width64_epochs3'
+name = 'HybridNN_d2b2_64_784_width64_epochs3'
 PATH = '../train/pth/%s.pth' % name
 pre_weights = torch.load(PATH)
 
+# rlv保存deepPoly方法需要的权重
 print("rlv start")
 f = open("./deepPoly/rlv/%s.pth.rlv" % name, "w")
 
@@ -53,14 +54,21 @@ for i in range(10):
 f.close()
 print("rlv end")
 
+# npz保存IBP方法需要的权重
 print("npz start")
 np.savez("./IBP/npz/%s.npz" % name,
-         np.asarray(pre_weights['fc1.weight'].T, dtype='float32'), np.asarray(pre_weights['fc1.bias'], dtype='float32'),
-         np.asarray(pre_weights['fc2.weight'].T, dtype='float32'), np.asarray(pre_weights['fc2.bias'], dtype='float32'),
-         np.asarray(pre_weights['fc3.weight_mu'].T, dtype='float32'), np.asarray(pre_weights['fc3.bias_mu'], dtype='float32'),
-         np.asarray(pre_weights['fc4.weight_mu'].T, dtype='float32'), np.asarray(pre_weights['fc4.bias_mu'], dtype='float32'),
-         np.asarray(pre_weights['fc3.weight_rho'].T, dtype='float32'), np.asarray(pre_weights['fc3.bias_rho'], dtype='float32'),
-         np.asarray(pre_weights['fc4.weight_rho'].T, dtype='float32'), np.asarray(pre_weights['fc4.bias_rho'], dtype='float32'))
+         (pre_weights['fc1.weight'].T.detach().cpu().numpy()), (pre_weights['fc1.bias'].detach().cpu().numpy()),
+         (pre_weights['fc2.weight'].T.detach().cpu().numpy()), (pre_weights['fc2.bias'].detach().cpu().numpy()),
+         (pre_weights['fc3.weight_mu'].T.detach().cpu().numpy()), (pre_weights['fc3.bias_mu'].detach().cpu().numpy()),
+         (pre_weights['fc4.weight_mu'].T.detach().cpu().numpy()), (pre_weights['fc4.bias_mu'].detach().cpu().numpy()),
+         (pre_weights['fc3.weight_rho'].T.detach().cpu().numpy()), (pre_weights['fc3.bias_rho'].detach().cpu().numpy()),
+         (pre_weights['fc4.weight_rho'].T.detach().cpu().numpy()), (pre_weights['fc4.bias_rho'].detach().cpu().numpy()))
+         # np.asarray(pre_weights['fc1.weight'].T, dtype='float32'), np.asarray(pre_weights['fc1.bias'], dtype='float32'),
+         # np.asarray(pre_weights['fc2.weight'].T, dtype='float32'), np.asarray(pre_weights['fc2.bias'], dtype='float32'),
+         # np.asarray(pre_weights['fc3.weight_mu'].T, dtype='float32'), np.asarray(pre_weights['fc3.bias_mu'], dtype='float32'),
+         # np.asarray(pre_weights['fc4.weight_mu'].T, dtype='float32'), np.asarray(pre_weights['fc4.bias_mu'], dtype='float32'),
+         # np.asarray(pre_weights['fc3.weight_rho'].T, dtype='float32'), np.asarray(pre_weights['fc3.bias_rho'], dtype='float32'),
+         # np.asarray(pre_weights['fc4.weight_rho'].T, dtype='float32'), np.asarray(pre_weights['fc4.bias_rho'], dtype='float32'))
 print("npz end")
 
 

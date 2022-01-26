@@ -32,10 +32,7 @@ def gen_samples(iters):
         loaded_model['arr_0'], loaded_model['arr_1'], loaded_model['arr_2'], loaded_model['arr_3'], \
         loaded_model['arr_4'], loaded_model['arr_5'], loaded_model['arr_6'], loaded_model['arr_7'], \
         loaded_model['arr_8'], loaded_model['arr_9'], loaded_model['arr_10'], loaded_model['arr_11']
-    sW_0 = [];
-    sb_0 = [];
-    sW_1 = [];
-    sb_1 = [];
+    sW_0, sb_0, sW_1, sb_1 = [], [], [], []
     for i in range(iters):
         weight_sampler = TrainableRandomDistribution(torch.from_numpy(mW_0), torch.from_numpy(dW_0))
         sW_0.append(weight_sampler.sample().detach().numpy())
@@ -149,7 +146,7 @@ def interval_bound_propagation(a):
     reverse = False
     x = np.asarray(x)
     x = x.astype('float64')
-    x_l, x_u = in_reg[0], in_reg[1]
+    relu2_l, relu2_u = np.array(in_reg[0]), np.array(in_reg[1])
     out_ind = out_maximal
     loaded_model = np.load(model_path, allow_pickle=True)
     # 权重，偏差，均值，标准差
@@ -176,8 +173,8 @@ def interval_bound_propagation(a):
         extra_gate = (reverse and np.argmax(y) != out_ind)
         if (np.argmax(y) == out_ind or extra_gate):
             # If so, do interval propagation
-            ###############################################################################
-            h_l, h_u = propagate_interval(sW_0[i], dW_0, sb_0[i], db_0, x_l, x_u, w_margin)
+            # [relu2_l, relu2_u]是deepPoly求出的区间
+            h_l, h_u = propagate_interval(sW_0[i], dW_0, sb_0[i], db_0, relu2_l, relu2_u, w_margin)
             # h_l = (h_l - np.min(h_l) / np.max(h_l) - np.min(h_l)) / 100
             # h_u = (h_u - np.min(h_u) / np.max(h_u) - np.min(h_u)) / 100
             h_l, h_u = my_relu(h_l), my_relu(h_u)
@@ -245,7 +242,7 @@ def compute_all_intervals_proc(a):
         vW_0 = np.swapaxes(vW_0, 0, 1)
     print("交换维度后: ", vW_0.shape)
     # After we merge them, we need to use the erf function to evaluate exactly what the
-    #   lower bound on the probability is!
+    # lower bound on the probability is!
     ind = i
     nproc = numproc
     print("Using %s processes" % (nproc))

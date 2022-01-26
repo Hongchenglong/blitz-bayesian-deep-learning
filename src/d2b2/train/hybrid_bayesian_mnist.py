@@ -12,7 +12,7 @@ test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=64, s
 
 width = 64
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-classifier = HybridNN(dim1=256, dim2=128, width=width).to(device)
+classifier = HybridNN(dim1=64, dim2=784, width=width).to(device)
 print(classifier)
 optimizer = optim.Adam(classifier.parameters(), lr=0.001)
 criterion = torch.nn.CrossEntropyLoss()
@@ -52,7 +52,7 @@ for epoch in range(epochs):
                   'on the 10000 test images: {} %'.format(str(iteration), str(100 * correct / total)))
 
 
-PATH = './pth/HybridNN_d2b2_width%d_epochs%d.pth' % (width, epochs)
+PATH = './pth/HybridNN_d2b2_64_784_width%d_epochs%d.pth' % (width, epochs)
 torch.save(classifier.state_dict(), PATH)
 
 print("over")
