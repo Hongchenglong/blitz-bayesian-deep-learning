@@ -180,10 +180,10 @@ if __name__ == "__main__":
     width = 64
 
     # image = 5
-    for image in range(2, 3):
+    for image in range(0, 1):
         print("image: ", image)
-        name = 'HybridNN_d2b2_width%s_epochs3' % width
-        # name = 'HybridNN_d2b2_64_784_width64_epochs3'
+        # name = 'HybridNN_d2b2_width%s_epochs3' % width
+        name = 'HybridNN_d2b2_64_784_width64_epochs3'
         rlv = './deepPoly/rlv/%s.pth.rlv' % name  # deepPoly所需的权重文件
         mnist = '../../mnist/mnist_%s_local_property.in' % image
         x_l, x_u, relu2_l, relu2_u = deepPoly_interval(rlv, mnist, epsilon)

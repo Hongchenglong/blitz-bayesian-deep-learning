@@ -59,16 +59,16 @@ print("npz start")
 np.savez("./IBP/npz/%s.npz" % name,
          (pre_weights['fc1.weight'].T.detach().cpu().numpy()), (pre_weights['fc1.bias'].detach().cpu().numpy()),
          (pre_weights['fc2.weight'].T.detach().cpu().numpy()), (pre_weights['fc2.bias'].detach().cpu().numpy()),
-         (pre_weights['fc3.weight_mu'].T.detach().cpu().numpy()), (pre_weights['fc3.bias_mu'].detach().cpu().numpy()),
-         (pre_weights['fc4.weight_mu'].T.detach().cpu().numpy()), (pre_weights['fc4.bias_mu'].detach().cpu().numpy()),
-         (pre_weights['fc3.weight_rho'].T.detach().cpu().numpy()), (pre_weights['fc3.bias_rho'].detach().cpu().numpy()),
-         (pre_weights['fc4.weight_rho'].T.detach().cpu().numpy()), (pre_weights['fc4.bias_rho'].detach().cpu().numpy()))
-         # np.asarray(pre_weights['fc1.weight'].T, dtype='float32'), np.asarray(pre_weights['fc1.bias'], dtype='float32'),
-         # np.asarray(pre_weights['fc2.weight'].T, dtype='float32'), np.asarray(pre_weights['fc2.bias'], dtype='float32'),
-         # np.asarray(pre_weights['fc3.weight_mu'].T, dtype='float32'), np.asarray(pre_weights['fc3.bias_mu'], dtype='float32'),
-         # np.asarray(pre_weights['fc4.weight_mu'].T, dtype='float32'), np.asarray(pre_weights['fc4.bias_mu'], dtype='float32'),
-         # np.asarray(pre_weights['fc3.weight_rho'].T, dtype='float32'), np.asarray(pre_weights['fc3.bias_rho'], dtype='float32'),
-         # np.asarray(pre_weights['fc4.weight_rho'].T, dtype='float32'), np.asarray(pre_weights['fc4.bias_rho'], dtype='float32'))
+         # (pre_weights['fc3.weight_mu'].T.detach().cpu().numpy()), (pre_weights['fc3.bias_mu'].detach().cpu().numpy()),
+         # (pre_weights['fc4.weight_mu'].T.detach().cpu().numpy()), (pre_weights['fc4.bias_mu'].detach().cpu().numpy()),
+         np.log1p(np.exp(pre_weights['fc3.weight_mu'].T.detach().cpu().numpy())), np.log1p(np.exp(pre_weights['fc3.bias_mu'].detach().cpu().numpy())),
+         np.log1p(np.exp(pre_weights['fc4.weight_mu'].T.detach().cpu().numpy())), np.log1p(np.exp(pre_weights['fc4.bias_mu'].detach().cpu().numpy())),
+         np.log1p(np.exp(pre_weights['fc3.weight_rho'].T.detach().cpu().numpy())), np.log1p(np.exp(pre_weights['fc3.bias_rho'].detach().cpu().numpy())),
+         np.log1p(np.exp(pre_weights['fc4.weight_rho'].T.detach().cpu().numpy())), np.log1p(np.exp(pre_weights['fc4.bias_rho'].detach().cpu().numpy())))
+
+
+         # np.zeros_like(pre_weights['fc3.weight_rho'].T.detach().cpu().numpy()), np.zeros_like(pre_weights['fc3.bias_rho'].detach().cpu().numpy()),
+         # np.zeros_like(pre_weights['fc4.weight_rho'].T.detach().cpu().numpy()), np.zeros_like(pre_weights['fc4.bias_rho'].detach().cpu().numpy()))
 print("npz end")
 
 

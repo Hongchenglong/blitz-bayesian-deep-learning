@@ -196,8 +196,7 @@ def interval_bound_propagation(a):
                 valid_weight_intervals.append([sW_0[i], sb_0[i], sW_1[i], sb_1[i]])
         else:
             err += 1
-            print(np.argmax(y))
-            print(y)
+            print(y, np.argmax(y))
             print("Hm, incorrect prediction is worrying...")
             continue
     print("We found %s many valid intervals." % (len(valid_weight_intervals)))
