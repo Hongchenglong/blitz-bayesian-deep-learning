@@ -46,6 +46,7 @@ def IBP_p(image, x, x_l, x_u, relu2_l, relu2_u, width, npz, model_path):
 
     iters = 500
     nproc = 25
+    # margin = 2.0
     margin = 2.0
 
     # 模拟神经网络的输出
@@ -176,11 +177,12 @@ def mnist_test_point(filename):
 
 
 if __name__ == "__main__":
-    epsilon = 0.025
+    # epsilon = 0.025
+    epsilon = 0.001
     width = 64
 
     # image = 5
-    for image in range(0, 1):
+    for image in range(2, 3):
         print("image: ", image)
         # name = 'HybridNN_d2b2_width%s_epochs3' % width
         name = 'HybridNN_d2b2_64_784_width64_epochs3'

@@ -174,9 +174,7 @@ def interval_bound_propagation(a):
         if (np.argmax(y) == out_ind or extra_gate):
             # If so, do interval propagation
             # [relu2_l, relu2_u]是deepPoly求出的区间
-            h_l, h_u = propagate_interval(sW_0[i], dW_0, sb_0[i], db_0, relu2_l, relu2_u, w_margin)
-            # h_l = (h_l - np.min(h_l) / np.max(h_l) - np.min(h_l)) / 100
-            # h_u = (h_u - np.min(h_u) / np.max(h_u) - np.min(h_u)) / 100
+            h_l, h_u = propagate_interval(sW_0[i], dW_0, sb_0[i], db_0, my_relu(relu2_l), my_relu(relu2_u), w_margin)
             h_l, h_u = my_relu(h_l), my_relu(h_u)
 
             # 输出y的区间
@@ -200,7 +198,7 @@ def interval_bound_propagation(a):
             print("Hm, incorrect prediction is worrying...")
             continue
     print("We found %s many valid intervals." % (len(valid_weight_intervals)))
-    print("Pred error rate: %s/%s" % (err / float(search_samps), err))
+    print("Pred error rate: %s/%s=%s" % (err, search_samps, (err / float(search_samps))))
     if (len(valid_weight_intervals) == 0):
         return 0.0
     # Now we need to take all of the valid weight intervals we found and merge them

@@ -14,7 +14,7 @@
 # margin = float(args.margin)
 
 # python IBP-MNIST-Verify-Test.py --imnum $IMNUM --eps 0.025 --samples 1250 --width 64 --margin 2.0
-image = 10  # 第i张图
+image = 2  # 第i张图
 epsilon = 0.025  # 噪声
 iters = 500
 # iters = 5
