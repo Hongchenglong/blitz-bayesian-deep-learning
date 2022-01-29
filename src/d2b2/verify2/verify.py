@@ -1,5 +1,5 @@
 import torch
-from src.d2b2.verify.deepPoly.DeepPoly import network
+from src.layer3.verify.deepPoly.DeepPoly import network
 from blitz.modules import TrainableRandomDistribution
 
 
@@ -24,8 +24,8 @@ def deepPoly_interval(rlv, mnist, epsilon=0.025):
     # 测试点的区间
     x_l, x_u = net.load_robustness(mnist, epsilon, TRIM=True)
     # 用deepPoly求出的区间
-    relu2_l, relu2_u = net.deeppoly()
-    return x_l, x_u, relu2_l, relu2_u
+    final_l, final_u = net.deeppoly()
+    return x_l, x_u, final_l, final_u
 
 
 def IBP_p(image, x, x_l, x_u, relu2_l, relu2_u, width, npz, model_path):
@@ -44,10 +44,10 @@ def IBP_p(image, x, x_l, x_u, relu2_l, relu2_u, width, npz, model_path):
     from IBP.ProbablisticReachability import compute_all_intervals_proc
     from IBP.ProbablisticReachability import interval_bound_propagation
 
-    # iters = 500
-    iters = 100
-    nproc = 10
-    margin = 2.0
+    iters = 500
+    nproc = 25
+    # margin = 2.0
+    margin = 1.0
 
     # 模拟神经网络的输出
     ## 导出模型的权重和偏置
@@ -78,8 +78,7 @@ def IBP_p(image, x, x_l, x_u, relu2_l, relu2_u, width, npz, model_path):
     x1 = my_relu(np.matmul(x, fc1_w) + fc1_b)
     x2 = my_relu(np.matmul(x1, fc2_w) + fc2_b)
     for i in range(search_samps):
-        tmp = (np.matmul(my_relu(np.matmul(x2, sW_0[i]) + sb_0[i]), sW_1[i]) + sb_1[i])
-        y += tmp
+        y += (np.matmul(my_relu(np.matmul(x2, sW_0[i]) + sb_0[i]), sW_1[i]) + sb_1[i])
 
     out_cls = np.argmax(y)
     x_reg_1 = [relu2_l, relu2_u]
@@ -186,10 +185,20 @@ if __name__ == "__main__":
     for image in range(2, 3):
         print("image: ", image)
         # name = 'HybridNN_d2b2_width%s_epochs3' % width
-        name = 'HybridNN_d2b2_width64_epochs3'
+        name = 'HybridNN_d2b2_64_784_width64_epochs3'
         rlv = './deepPoly/rlv/%s.pth.rlv' % name  # deepPoly所需的权重文件
         mnist = '../../mnist/mnist_%s_local_property.in' % image
-        x_l, x_u, relu2_l, relu2_u = deepPoly_interval(rlv, mnist, epsilon)
+        x_l, x_u, y_pred_l, y_pred_u = deepPoly_interval(rlv, mnist, epsilon)
+
+        safety_check = True
+        value_ind = 0
+        for value in y_pred_u:
+            if y_pred_l[out_ind] < value and value_ind != out_ind:  # 如果 最终输出的下界<第i个预测的上界 且 i!=最终输出的索引: 则不安全
+                safety_check = False
+            value_ind += 1
+        if safety_check:
+            # If it does, add the weight to the set of valid weights
+            valid_weight_intervals.append([sW_0[i], sb_0[i], sW_1[i], sb_1[i]])
 
         x = mnist_test_point(mnist)  # 测试点
         npz = '%s.npz' % name

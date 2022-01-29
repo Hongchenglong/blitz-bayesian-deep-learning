@@ -27,7 +27,6 @@ GLOBAL_samples = "lollol"
 
 def gen_samples(iters):
     global GLOBAL_samples
-    ## 导出模型的权重和偏置
     loaded_model = np.load(model_path, allow_pickle=True)
     # 权重，偏差，均值，标准差
     [fc1_w, fc1_b, fc2_w, fc2_b, mW_0, mb_0, mW_1, mb_1, dW_0, db_0, dW_1, db_1] = \
@@ -44,7 +43,10 @@ def gen_samples(iters):
         sW_1.append(weight_sampler.sample().detach().numpy())
         bias_sampler = TrainableRandomDistribution(torch.from_numpy(mb_1), torch.from_numpy(db_1))
         sb_1.append(bias_sampler.sample().detach().numpy())
-    sW_0 = np.array(sW_0); sb_0 = np.array(sb_0); sW_1 = np.array(sW_1); sb_1 = np.array(sb_1);
+    sW_0 = np.array(sW_0);
+    sb_0 = np.array(sb_0);
+    sW_1 = np.array(sW_1);
+    sb_1 = np.array(sb_1);
     GLOBAL_samples = [sW_0, sb_0, sW_1, sb_1]
     pass
 
@@ -145,6 +147,7 @@ def interval_bound_propagation(a):
     reverse = False
     x = np.asarray(x)
     x = x.astype('float64')
+    # relu2_l, relu2_u = F.softmax(torch.from_numpy(my_relu(np.array(in_reg[0]))), dim=0), F.softmax(torch.from_numpy(my_relu(np.array(in_reg[1]))), dim=0)
     relu2_l, relu2_u = my_relu(np.array(in_reg[0])), my_relu(np.array(in_reg[1]))
     out_ind = out_maximal
     loaded_model = np.load(model_path, allow_pickle=True)
@@ -155,7 +158,7 @@ def interval_bound_propagation(a):
         loaded_model['arr_8'], loaded_model['arr_9'], loaded_model['arr_10'], loaded_model['arr_11']
     # First, sample and hope some weights satisfy the out_reg constraint
     [sW_0, sb_0, sW_1, sb_1] = GLOBAL_samples
-    # print(id * search_samps, (id + 1) * search_samps)
+    print(id * search_samps, (id + 1) * search_samps)
     sW_0 = sW_0[id * search_samps: (id + 1) * search_samps]
     sb_0 = sb_0[id * search_samps: (id + 1) * search_samps]
     sW_1 = sW_1[id * search_samps: (id + 1) * search_samps]
@@ -168,9 +171,9 @@ def interval_bound_propagation(a):
         # Full forward pass in one line :-)
         y = (np.matmul(my_relu(np.matmul(x2, sW_0[i]) + sb_0[i]), sW_1[i]) + sb_1[i])
         # Logical check if weights sample out_reg constraint
-        pre_ind = np.argmax(y)
-        extra_gate = (reverse and pre_ind != out_ind)
-        if (pre_ind == out_ind or extra_gate):
+        # print(sW_0[i][0][0])
+        extra_gate = (reverse and np.argmax(y) != out_ind)
+        if (np.argmax(y) == out_ind or extra_gate):
             # If so, do interval propagation
             # [relu2_l, relu2_u]是deepPoly求出的区间
             h_l, h_u = propagate_interval(sW_0[i], dW_0, sb_0[i], db_0, relu2_l, relu2_u, w_margin)
@@ -181,21 +184,20 @@ def interval_bound_propagation(a):
             assert ((y_pred_l <= y).all())
             assert ((y_pred_u >= y).all())
             # Check if interval propagation still respects out_reg constraint
+            # extra_gate = (reverse and np.argmax(y_pred_l) != out_ind and np.argmax(y_pred_u) != out_ind)
             safety_check = True
             value_ind = 0
-            value_l = y_pred_l[out_ind]
-            for value_u in y_pred_u:
-                if value_l < value_u and value_ind != out_ind:  # 如果 最终输出的下界<第i个预测的上界 且 i!=最终输出的索引: 则不安全
+            for value in y_pred_u:
+                if y_pred_l[out_ind] < value and value_ind != out_ind:  # 如果 最终输出的下界<第i个预测的上界 且 i!=最终输出的索引: 则不安全
                     safety_check = False
-                    break
                 value_ind += 1
             if safety_check:
                 # If it does, add the weight to the set of valid weights
                 valid_weight_intervals.append([sW_0[i], sb_0[i], sW_1[i], sb_1[i]])
         else:
             err += 1
-            # print(y, np.argmax(y))
-            # print("Hm, incorrect prediction is worrying...")
+            print(y, np.argmax(y))
+            print("Hm, incorrect prediction is worrying...")
             continue
     print("We found %s many valid intervals." % (len(valid_weight_intervals)))
     print("Pred error rate: %s/%s=%s" % (err, search_samps, (err / float(search_samps))))

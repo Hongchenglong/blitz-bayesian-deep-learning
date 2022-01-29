@@ -3,7 +3,7 @@ import torch.optim as optim
 import torchvision.datasets as dsets
 import torchvision.transforms as transforms
 
-from src.layer5.HybridNN import HybridNN
+from src.paper.HybridNN import HybridNN
 
 train_dataset = dsets.MNIST(root="../data", train=True, transform=transforms.ToTensor(), download=True)
 train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=64, shuffle=True)
@@ -52,7 +52,7 @@ for epoch in range(epochs):
                   'on the 10000 test images: {} %'.format(str(iteration), str(100 * correct / total)))
 
 
-PATH = '../NNs/HybridNN_layer%d_epochs%d.pth' % (3, epochs)
+PATH = 'HybridNN_layer%d_epochs%d.pth' % (3, epochs)
 torch.save(classifier.state_dict(), PATH)
 
 print("over")

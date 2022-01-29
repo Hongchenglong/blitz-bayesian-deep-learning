@@ -507,10 +507,10 @@ def ex2():
     # # Notice: you can try different net, property and delta. (FNN4, property0-49, 0.037), (FNN5, property0-49, 0.026), (FNN6, property0-49, 0.021), (FNN7, property0-49, 0.015) is used in paper.
     # # Notice: you can try different MAX_ITER to check how iteration numbers affect experiment results.
     # # Warning: To do batch verification in large nets is time consuming. Try FNN4 if you want to do quick reproducing.
-    # rlv = 'rlv/caffeprototxt_AI2_MNIST_FNN_4_testNetworkB.rlv'
-    rlv = 'rlv/HybridNN_layer3_epochs1.pth.rlv'
-    property = 'mnist/mnist_0_local_property.in'
-    delta = 0.037
+    rlv = 'rlv/caffeprototxt_AI2_MNIST_FNN_4_testNetworkB.rlv'
+    # rlv = 'rlv/HybridNN_layer3_epochs1.pth.rlv'
+    property = 'properties/mnist_0_local_property.in'
+    delta = 0.025
     # net = network()
     # net.load_rlv(rlv)
     # net.clear()

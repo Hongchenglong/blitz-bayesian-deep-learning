@@ -1,6 +1,6 @@
 import os
 
-from src.layer5.HybridNN import HybridNN
+from src.paper.HybridNN import HybridNN
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 
@@ -9,7 +9,7 @@ import torchvision.datasets as dsets
 import torchvision.transforms as transforms
 
 
-test_dataset = dsets.MNIST(root="../data", train=False, transform=transforms.ToTensor(), download=True)
+test_dataset = dsets.MNIST(root="../../../data", train=False, transform=transforms.ToTensor(), download=True)
 test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=64, shuffle=True)
 
 

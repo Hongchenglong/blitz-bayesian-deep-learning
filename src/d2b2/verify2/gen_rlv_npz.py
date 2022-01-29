@@ -1,9 +1,9 @@
 import torch
 import numpy as np
-from src.d2b2.train.HybridNN import HybridNN
+from src.layer3.train.HybridNN import HybridNN
 
 net = HybridNN()
-name = 'HybridNN_d2b2_width64_epochs3'
+name = 'HybridNN_d2b2_64_784_width64_epochs3'
 PATH = '../train/pth/%s.pth' % name
 pre_weights = torch.load(PATH)
 
@@ -61,10 +61,10 @@ np.savez("./IBP/npz/%s.npz" % name,
          (pre_weights['fc2.weight'].T.detach().cpu().numpy()), (pre_weights['fc2.bias'].detach().cpu().numpy()),
          (pre_weights['fc3.weight_mu'].T.detach().cpu().numpy()), (pre_weights['fc3.bias_mu'].detach().cpu().numpy()),
          (pre_weights['fc4.weight_mu'].T.detach().cpu().numpy()), (pre_weights['fc4.bias_mu'].detach().cpu().numpy()),
-         np.sqrt(np.log1p(np.exp(pre_weights['fc3.weight_rho'].T.detach().cpu().numpy()))), np.sqrt(np.log1p(np.exp(pre_weights['fc3.bias_rho'].detach().cpu().numpy()))),
-         np.sqrt(np.log1p(np.exp(pre_weights['fc4.weight_rho'].T.detach().cpu().numpy()))), np.sqrt(np.log1p(np.exp(pre_weights['fc4.bias_rho'].detach().cpu().numpy()))))
-         # np.zeros_like(pre_weights['fc3.weight_rho'].T.detach().cpu().numpy()), np.zeros_like(pre_weights['fc3.bias_rho'].detach().cpu().numpy()),
-         # np.zeros_like(pre_weights['fc4.weight_rho'].T.detach().cpu().numpy()), np.zeros_like(pre_weights['fc4.bias_rho'].detach().cpu().numpy()))
+         # np.sqrt(np.log1p(np.exp(pre_weights['fc3.weight_rho'].T.detach().cpu().numpy()))), np.sqrt(np.log1p(np.exp(pre_weights['fc3.bias_rho'].detach().cpu().numpy()))),
+         # np.sqrt(np.log1p(np.exp(pre_weights['fc4.weight_rho'].T.detach().cpu().numpy()))), np.sqrt(np.log1p(np.exp(pre_weights['fc4.bias_rho'].detach().cpu().numpy()))))
+         np.zeros_like(pre_weights['fc3.weight_rho'].T.detach().cpu().numpy()), np.zeros_like(pre_weights['fc3.bias_rho'].detach().cpu().numpy()),
+         np.zeros_like(pre_weights['fc4.weight_rho'].T.detach().cpu().numpy()), np.zeros_like(pre_weights['fc4.bias_rho'].detach().cpu().numpy()))
 print("npz end")
 
 

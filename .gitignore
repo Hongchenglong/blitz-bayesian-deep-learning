@@ -142,4 +142,4 @@ utils/data/
 
 # network
 /NNs/*.pth
-/src/layer5/ProbabilisticSafetyforBNNs/Test/
+/src/paper/ProbabilisticSafetyforBNNs/Test/
