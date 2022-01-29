@@ -50,8 +50,12 @@ for epoch in range(epochs):
             print('Iteration: {} | Accuracy of the network '
                   'on the 10000 test images: {} %'.format(str(iteration), str(100 * correct / total)))
 
-
 PATH = './pth/HybridNN_d2b2_width%d_epochs%d.pth' % (width, epochs)
+
+import os
+if not os.path.exists(PATH):
+    os.mknod(PATH)
+
 torch.save(classifier.state_dict(), PATH)
 
 print("over")

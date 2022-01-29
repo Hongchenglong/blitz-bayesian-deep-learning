@@ -1,3 +1,4 @@
+import os
 import torch
 import numpy as np
 from src.d2b2.train.HybridNN import HybridNN
@@ -9,7 +10,10 @@ pre_weights = torch.load(PATH)
 
 # rlv保存deepPoly方法需要的权重
 print("rlv start")
-f = open("./deepPoly/rlv/%s.pth.rlv" % name, "w")
+rlv = "./deepPoly/rlv/%s.rlv" % name
+if not os.path.exists(rlv):
+    os.mknod(rlv)
+f = open(rlv, 'w')
 
 # 输入层
 f.write("# Layer 0 784 Input data\n")
@@ -56,13 +60,18 @@ print("rlv end")
 
 # npz保存IBP方法需要的权重
 print("npz start")
-np.savez("./IBP/npz/%s.npz" % name,
+npz = "./IBP/npz/%s.npz" % name
+if not os.path.exists(npz):
+    os.mknod(npz)
+np.savez(npz,
          (pre_weights['fc1.weight'].T.detach().cpu().numpy()), (pre_weights['fc1.bias'].detach().cpu().numpy()),
          (pre_weights['fc2.weight'].T.detach().cpu().numpy()), (pre_weights['fc2.bias'].detach().cpu().numpy()),
          (pre_weights['fc3.weight_mu'].T.detach().cpu().numpy()), (pre_weights['fc3.bias_mu'].detach().cpu().numpy()),
          (pre_weights['fc4.weight_mu'].T.detach().cpu().numpy()), (pre_weights['fc4.bias_mu'].detach().cpu().numpy()),
-         np.sqrt(np.log1p(np.exp(pre_weights['fc3.weight_rho'].T.detach().cpu().numpy()))), np.sqrt(np.log1p(np.exp(pre_weights['fc3.bias_rho'].detach().cpu().numpy()))),
-         np.sqrt(np.log1p(np.exp(pre_weights['fc4.weight_rho'].T.detach().cpu().numpy()))), np.sqrt(np.log1p(np.exp(pre_weights['fc4.bias_rho'].detach().cpu().numpy()))))
+         (pre_weights['fc3.weight_rho'].T.detach().cpu().numpy()), (pre_weights['fc3.bias_rho'].detach().cpu().numpy()),
+         (pre_weights['fc4.weight_rho'].T.detach().cpu().numpy()), (np.exp(pre_weights['fc4.bias_rho'].detach().cpu().numpy())))
+         # np.sqrt(np.log1p(np.exp(pre_weights['fc3.weight_rho'].T.detach().cpu().numpy()))), np.sqrt(np.log1p(np.exp(pre_weights['fc3.bias_rho'].detach().cpu().numpy()))),
+         # np.sqrt(np.log1p(np.exp(pre_weights['fc4.weight_rho'].T.detach().cpu().numpy()))), np.sqrt(np.log1p(np.exp(pre_weights['fc4.bias_rho'].detach().cpu().numpy()))))
          # np.zeros_like(pre_weights['fc3.weight_rho'].T.detach().cpu().numpy()), np.zeros_like(pre_weights['fc3.bias_rho'].detach().cpu().numpy()),
          # np.zeros_like(pre_weights['fc4.weight_rho'].T.detach().cpu().numpy()), np.zeros_like(pre_weights['fc4.bias_rho'].detach().cpu().numpy()))
 print("npz end")

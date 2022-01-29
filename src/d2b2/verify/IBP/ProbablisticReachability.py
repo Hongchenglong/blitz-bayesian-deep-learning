@@ -155,7 +155,6 @@ def interval_bound_propagation(a):
         loaded_model['arr_8'], loaded_model['arr_9'], loaded_model['arr_10'], loaded_model['arr_11']
     # First, sample and hope some weights satisfy the out_reg constraint
     [sW_0, sb_0, sW_1, sb_1] = GLOBAL_samples
-    # print(id * search_samps, (id + 1) * search_samps)
     sW_0 = sW_0[id * search_samps: (id + 1) * search_samps]
     sb_0 = sb_0[id * search_samps: (id + 1) * search_samps]
     sW_1 = sW_1[id * search_samps: (id + 1) * search_samps]
@@ -173,10 +172,14 @@ def interval_bound_propagation(a):
         if (pre_ind == out_ind or extra_gate):
             # If so, do interval propagation
             # [relu2_l, relu2_u]是deepPoly求出的区间
+            dW_0 = np.sqrt(np.log1p(np.exp(dW_0)))
+            db_0 = np.sqrt(np.log1p(np.exp(db_0)))
             h_l, h_u = propagate_interval(sW_0[i], dW_0, sb_0[i], db_0, relu2_l, relu2_u, w_margin)
             h_l, h_u = my_relu(h_l), my_relu(h_u)
 
             # 输出y的区间
+            dW_1 = np.sqrt(np.log1p(np.exp(dW_1)))
+            db_1 = np.sqrt(np.log1p(np.exp(db_1)))
             y_pred_l, y_pred_u = propagate_interval(sW_1[i], dW_1, sb_1[i], db_1, h_l, h_u, w_margin)
             assert ((y_pred_l <= y).all())
             assert ((y_pred_u >= y).all())

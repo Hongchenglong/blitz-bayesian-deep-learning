@@ -78,8 +78,9 @@ def IBP_p(image, x, x_l, x_u, relu2_l, relu2_u, width, npz, model_path):
     x1 = my_relu(np.matmul(x, fc1_w) + fc1_b)
     x2 = my_relu(np.matmul(x1, fc2_w) + fc2_b)
     for i in range(search_samps):
-        tmp = (np.matmul(my_relu(np.matmul(x2, sW_0[i]) + sb_0[i]), sW_1[i]) + sb_1[i])
-        y += tmp
+        x3 = my_relu(np.matmul(x2, sW_0[i]) + sb_0[i])
+        out = np.matmul(x3, sW_1[i]) + sb_1[i]
+        y += out
 
     out_cls = np.argmax(y)
     x_reg_1 = [relu2_l, relu2_u]
@@ -179,15 +180,13 @@ def mnist_test_point(filename):
 
 if __name__ == "__main__":
     epsilon = 0.025
-    # epsilon = 0.001
     width = 64
 
     # image = 5
     for image in range(2, 3):
         print("image: ", image)
-        # name = 'HybridNN_d2b2_width%s_epochs3' % width
         name = 'HybridNN_d2b2_width64_epochs3'
-        rlv = './deepPoly/rlv/%s.pth.rlv' % name  # deepPoly所需的权重文件
+        rlv = './deepPoly/rlv/%s.rlv' % name  # deepPoly所需的权重文件
         mnist = '../../mnist/mnist_%s_local_property.in' % image
         x_l, x_u, relu2_l, relu2_u = deepPoly_interval(rlv, mnist, epsilon)
 
