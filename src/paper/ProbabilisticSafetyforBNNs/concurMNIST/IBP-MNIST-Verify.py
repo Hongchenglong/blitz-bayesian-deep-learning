@@ -75,11 +75,12 @@ y = np.zeros(10)
 for i in range(search_samps):
     y += (np.matmul(my_relu(np.matmul(x, sW_0[i]) + sb_0[i]), sW_1[i]) + sb_1[i])
 
+out_cls = np.argmax(y)
 print("Mean prediction")
-print(y / float(search_samps))
+print(y / float(search_samps), out_cls)
 
 x_reg_1 = [x_l, x_u]
-out_cls = np.argmax(y)
+
 
 #
 ProbablisticReachability.set_model_path(model_path)

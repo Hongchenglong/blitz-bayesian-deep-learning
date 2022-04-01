@@ -30,22 +30,18 @@ def gen_samples(iters):
     ## 导出模型的权重和偏置
     loaded_model = np.load(model_path, allow_pickle=True)
     # 权重，偏差，均值，标准差
-    [fc1_w, fc1_b, fc2_w, fc2_b, mW_0, mb_0, mW_1, mb_1, dW_0, db_0, dW_1, db_1] = \
-        loaded_model['arr_0'], loaded_model['arr_1'], loaded_model['arr_2'], loaded_model['arr_3'], \
-        loaded_model['arr_4'], loaded_model['arr_5'], loaded_model['arr_6'], loaded_model['arr_7'], \
-        loaded_model['arr_8'], loaded_model['arr_9'], loaded_model['arr_10'], loaded_model['arr_11']
-    sW_0, sb_0, sW_1, sb_1 = [], [], [], []
+    [fc1_w, fc1_b, fc2_w, fc2_b, fc3_w, fc3_b, fc4_w_mu, fc4_b_mu, fc4_w_rho, fc4_b_rho] = \
+        loaded_model['arr_0'], loaded_model['arr_1'], \
+        loaded_model['arr_2'], loaded_model['arr_3'], loaded_model['arr_4'], loaded_model['arr_5'], \
+        loaded_model['arr_6'], loaded_model['arr_7'], loaded_model['arr_8'], loaded_model['arr_9']
+    fc4_w, fc4_b = [], []
     for i in range(iters):
-        weight_sampler = TrainableRandomDistribution(torch.from_numpy(mW_0), torch.from_numpy(dW_0))
-        sW_0.append(weight_sampler.sample().detach().numpy())
-        bias_sampler = TrainableRandomDistribution(torch.from_numpy(mb_0), torch.from_numpy(db_0))
-        sb_0.append(bias_sampler.sample().detach().numpy())
-        weight_sampler = TrainableRandomDistribution(torch.from_numpy(mW_1), torch.from_numpy(dW_1))
-        sW_1.append(weight_sampler.sample().detach().numpy())
-        bias_sampler = TrainableRandomDistribution(torch.from_numpy(mb_1), torch.from_numpy(db_1))
-        sb_1.append(bias_sampler.sample().detach().numpy())
-    sW_0 = np.array(sW_0); sb_0 = np.array(sb_0); sW_1 = np.array(sW_1); sb_1 = np.array(sb_1);
-    GLOBAL_samples = [sW_0, sb_0, sW_1, sb_1]
+        weight_sampler = TrainableRandomDistribution(torch.from_numpy(fc4_w_mu), torch.from_numpy(fc4_w_rho))
+        fc4_w.append(weight_sampler.sample().detach().numpy())
+        bias_sampler = TrainableRandomDistribution(torch.from_numpy(fc4_b_mu), torch.from_numpy(fc4_b_rho))
+        fc4_b.append(bias_sampler.sample().detach().numpy())
+    fc4_w, fc4_b = np.array(fc4_w), np.array(fc4_b)
+    GLOBAL_samples = [fc4_w, fc4_b]
     pass
 
 
@@ -145,46 +141,35 @@ def interval_bound_propagation(a):
     reverse = False
     x = np.asarray(x)
     x = x.astype('float64')
-    relu2_l, relu2_u = my_relu(np.array(in_reg[0])), my_relu(np.array(in_reg[1]))
+    relu3_l, relu3_u = my_relu(np.array(in_reg[0])), my_relu(np.array(in_reg[1]))
     # relu2_l, relu2_u = relu2_l/10, relu2_u/10
     # relu2_l, relu2_u = F.softmax(torch.from_numpy(relu2_l), dim=0), F.softmax(torch.from_numpy(relu2_u), dim=0)
     out_ind = out_maximal
     loaded_model = np.load(model_path, allow_pickle=True)
     # 权重，偏差，均值，标准差
-    [fc1_w, fc1_b, fc2_w, fc2_b, mW_0, mb_0, mW_1, mb_1, dW_0, db_0, dW_1, db_1] = \
-        loaded_model['arr_0'], loaded_model['arr_1'], loaded_model['arr_2'], loaded_model['arr_3'], \
-        loaded_model['arr_4'], loaded_model['arr_5'], loaded_model['arr_6'], loaded_model['arr_7'], \
-        loaded_model['arr_8'], loaded_model['arr_9'], loaded_model['arr_10'], loaded_model['arr_11']
+    [fc1_w, fc1_b, fc2_w, fc2_b, fc3_w, fc3_b, fc4_w_mu, fc4_b_mu, fc4_w_rho, fc4_b_rho] = \
+        loaded_model['arr_0'], loaded_model['arr_1'], \
+        loaded_model['arr_2'], loaded_model['arr_3'], loaded_model['arr_4'], loaded_model['arr_5'], \
+        loaded_model['arr_6'], loaded_model['arr_7'], loaded_model['arr_8'], loaded_model['arr_9']
     # First, sample and hope some weights satisfy the out_reg constraint
-    [sW_0, sb_0, sW_1, sb_1] = GLOBAL_samples
-    sW_0 = sW_0[id * search_samps: (id + 1) * search_samps]
-    sb_0 = sb_0[id * search_samps: (id + 1) * search_samps]
-    sW_1 = sW_1[id * search_samps: (id + 1) * search_samps]
-    sb_1 = sb_1[id * search_samps: (id + 1) * search_samps]
-    # dW_0 = np.sqrt(np.log1p(np.exp(dW_0)))
-    # db_0 = np.sqrt(np.log1p(np.exp(db_0)))
-    # dW_1 = np.sqrt(np.log1p(np.exp(dW_1)))
-    # db_1 = np.sqrt(np.log1p(np.exp(db_1)))
-
+    [fc4_w, fc4_b] = GLOBAL_samples
+    fc4_w = fc4_w[id * search_samps: (id + 1) * search_samps]
+    fc4_b = fc4_b[id * search_samps: (id + 1) * search_samps]
     valid_weight_intervals = []
     err = 0
     x1 = my_relu(np.matmul(x, fc1_w) + fc1_b)
     x2 = my_relu(np.matmul(x1, fc2_w) + fc2_b)
+    x3 = my_relu(np.matmul(x2, fc3_w) + fc3_b)
     for i in range(search_samps):
         # Full forward pass in one line :-)
-        y = (np.matmul(my_relu(np.matmul(x2, sW_0[i]) + sb_0[i]), sW_1[i]) + sb_1[i])
-        # y = F.softmax(torch.from_numpy(y), dim=0)
+        y = np.matmul(x3, fc4_w[i]) + fc4_b[i]
         # Logical check if weights sample out_reg constraint
         pre_ind = np.argmax(y)
         extra_gate = (reverse and pre_ind != out_ind)
         if (pre_ind == out_ind or extra_gate):
             # If so, do interval propagation
-            # [relu2_l, relu2_u]是deepPoly求出的区间
-            h_l, h_u = propagate_interval(sW_0[i], dW_0, sb_0[i], db_0, relu2_l, relu2_u, w_margin)
-            h_l, h_u = my_relu(h_l), my_relu(h_u)
-
             # 输出y的区间
-            y_pred_l, y_pred_u = propagate_interval(sW_1[i], dW_1, sb_1[i], db_1, h_l, h_u, w_margin)
+            y_pred_l, y_pred_u = propagate_interval(fc4_w[i], fc4_w_rho, fc4_b[i], fc4_b_rho, relu3_l, relu3_u, w_margin)
             assert ((y_pred_l <= y).all())
             assert ((y_pred_u >= y).all())
             # Check if interval propagation still respects out_reg constraint
@@ -198,7 +183,7 @@ def interval_bound_propagation(a):
                 value_ind += 1
             if safety_check:
                 # If it does, add the weight to the set of valid weights
-                valid_weight_intervals.append([sW_0[i], sb_0[i], sW_1[i], sb_1[i]])
+                valid_weight_intervals.append([fc4_w[i], fc4_b[i]])
         else:
             err += 1
             # print(y, np.argmax(y))

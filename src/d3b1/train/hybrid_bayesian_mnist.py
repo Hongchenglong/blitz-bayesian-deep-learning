@@ -2,16 +2,16 @@ import torch
 import torch.optim as optim
 import torchvision.datasets as dsets
 import torchvision.transforms as transforms
-from src.d2b2.train.HybridNN import HybridNN
+from src.d3b1.train.HybridNN import HybridNN
 
 train_dataset = dsets.MNIST(root="../../../data", train=True, transform=transforms.ToTensor(), download=True)
 train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=64, shuffle=True)
 test_dataset = dsets.MNIST(root="../../../data", train=False, transform=transforms.ToTensor(), download=True)
 test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=64, shuffle=True)
 
-width = 64
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-classifier = HybridNN(dim1=256, dim2=784, width=width).to(device)
+dim1, dim2, dim3 = 256, 128, 64
+classifier = HybridNN(dim1=dim1, dim2=dim2, dim3=dim3).to(device)
 print(classifier)
 optimizer = optim.Adam(classifier.parameters(), lr=0.001)
 criterion = torch.nn.CrossEntropyLoss()
@@ -50,14 +50,15 @@ for epoch in range(epochs):
             print('Iteration: {} | Accuracy of the network '
                   'on the 10000 test images: {} %'.format(str(iteration), str(100 * correct / total)))
 
-PATH = './pth/c.pth' % (width, epochs)
+PATH = './pth/HybridNN_d3b1_%s_%s_%s_epochs%s.pth' % (dim1, dim2, dim3, epochs)
 
 import os
 try:
     if not os.path.exists(PATH):
         os.mknod(PATH)
 except:
-    pass
+    os.mkdir('./pth')
+    os.mknod(PATH)
 
 torch.save(classifier.state_dict(), PATH)
 

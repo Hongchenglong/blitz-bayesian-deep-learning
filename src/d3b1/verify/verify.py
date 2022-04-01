@@ -1,5 +1,6 @@
+import numpy as np
 import torch
-from src.d2b2.verify.deepPoly.DeepPoly import network
+from src.d3b1.verify.deepPoly.DeepPoly import network
 from blitz.modules import TrainableRandomDistribution
 
 
@@ -24,14 +25,13 @@ def deepPoly_interval(rlv, mnist, epsilon=0.025):
     # 测试点的区间
     x_l, x_u = net.load_robustness(mnist, epsilon, TRIM=True)
     # 用deepPoly求出的区间
-    relu2_l, relu2_u = net.deeppoly()
-    return x_l, x_u, relu2_l, relu2_u
+    relu3_l, relu3_u = net.deeppoly()
+    return x_l, x_u, relu3_l, relu3_u
 
 
-def IBP_p(image, x, x_l, x_u, relu2_l, relu2_u, width, npz, model_path):
+def IBP_p(image, x, relu3_l, relu3_u, epsilon, name):
     """
     image: 第i张mnist图片
-    width: 倒数第二层贝叶斯层的宽度
     npz: 预训练保存的weight和bias
     iters: 迭代次数
     margin: weight margin
@@ -47,43 +47,40 @@ def IBP_p(image, x, x_l, x_u, relu2_l, relu2_u, width, npz, model_path):
     # iters = 500
     iters = 100
     nproc = 10
-    margin = 0.0001
+    margin = 0.000125
+    model_path = "./IBP/npz/%s.npz" % name  # IBP所需的权重文件
 
     # 模拟神经网络的输出
     ## 导出模型的权重和偏置
     loaded_model = np.load(model_path, allow_pickle=True)
     # 权重，偏差，均值，标准差
-    [fc1_w, fc1_b, fc2_w, fc2_b, mW_0, mb_0, mW_1, mb_1, dW_0, db_0, dW_1, db_1] = \
-        loaded_model['arr_0'], loaded_model['arr_1'], loaded_model['arr_2'], loaded_model['arr_3'], \
-        loaded_model['arr_4'], loaded_model['arr_5'], loaded_model['arr_6'], loaded_model['arr_7'], \
-        loaded_model['arr_8'], loaded_model['arr_9'], loaded_model['arr_10'], loaded_model['arr_11']
+    [fc1_w, fc1_b, fc2_w, fc2_b, fc3_w, fc3_b, fc4_w_mu, fc4_b_mu, fc4_w_rho, fc4_b_rho] = \
+        loaded_model['arr_0'], loaded_model['arr_1'], \
+        loaded_model['arr_2'], loaded_model['arr_3'], loaded_model['arr_4'], loaded_model['arr_5'], \
+        loaded_model['arr_6'], loaded_model['arr_7'], loaded_model['arr_8'], loaded_model['arr_9']
 
     # 对权重和偏置进行采样，生成search_samps个一层BNN的权重和偏置
     # First, sample and hope some weights satisfy the out_reg constraint
     search_samps = 150
-    sW_0, sb_0, sW_1, sb_1 = [], [], [], []
+    fc4_w, fc4_b = [], []
     for i in range(search_samps):
-        weight_sampler = TrainableRandomDistribution(torch.from_numpy(mW_0), torch.from_numpy(dW_0))
-        sW_0.append(weight_sampler.sample().detach().numpy())
-        bias_sampler = TrainableRandomDistribution(torch.from_numpy(mb_0), torch.from_numpy(db_0))
-        sb_0.append(bias_sampler.sample().detach().numpy())
-        weight_sampler = TrainableRandomDistribution(torch.from_numpy(mW_1), torch.from_numpy(dW_1))
-        sW_1.append(weight_sampler.sample().detach().numpy())
-        bias_sampler = TrainableRandomDistribution(torch.from_numpy(mb_1), torch.from_numpy(db_1))
-        sb_1.append(bias_sampler.sample().detach().numpy())
-    sW_0 = np.array(sW_0); sb_0 = np.array(sb_0); sW_1 = np.array(sW_1); sb_1 = np.array(sb_1);
+        weight_sampler = TrainableRandomDistribution(torch.from_numpy(fc4_w_mu), torch.from_numpy(fc4_w_rho))
+        fc4_w.append(weight_sampler.sample().detach().numpy())
+        bias_sampler = TrainableRandomDistribution(torch.from_numpy(fc4_b_mu), torch.from_numpy(fc4_b_rho))
+        fc4_b.append(bias_sampler.sample().detach().numpy())
+    fc4_w, fc4_b = np.array(fc4_w), np.array(fc4_b)
 
     ## 前向传播
     y = np.zeros(10)
     x1 = my_relu(np.matmul(x, fc1_w) + fc1_b)
     x2 = my_relu(np.matmul(x1, fc2_w) + fc2_b)
+    x3 = my_relu(np.matmul(x2, fc3_w) + fc3_b)
     for i in range(search_samps):
-        x3 = my_relu(np.matmul(x2, sW_0[i]) + sb_0[i])
-        out = np.matmul(x3, sW_1[i]) + sb_1[i]
+        out = np.matmul(x3, fc4_w[i]) + fc4_b[i]
         y += out
 
     out_cls = np.argmax(y)
-    x_reg_1 = [relu2_l, relu2_u]
+    x_reg_1 = [relu3_l, relu3_u]
 
     print("Mean prediction")
     print(y / float(search_samps), out_cls)
@@ -113,9 +110,9 @@ def IBP_p(image, x, x_l, x_u, relu2_l, relu2_u, width, npz, model_path):
         import logging
 
         ph1 = 0.0
-        logging.basicConfig(filename="Runs%s.log" % width, level=logging.DEBUG)
-        logging.info("image=%s,width=%s,epsilon=%s,margin=%s,iters=%s,elapsed=%s,ph1=%s"
-                     % (image, width, epsilon, margin, iters, elapsed, ph1))
+        logging.basicConfig(filename="%s.log" % name, level=logging.DEBUG)
+        logging.info("image=%s, epsilon=%s, margin=%s, iters=%s, elapsed=%s, ph1=%s"
+                     % (image, epsilon, margin, iters, elapsed, ph1))
 
     vad_int = []
     logged_flag = False
@@ -130,9 +127,9 @@ def IBP_p(image, x, x_l, x_u, relu2_l, relu2_u, width, npz, model_path):
         import logging
 
         ph1 = 0.0
-        logging.basicConfig(filename="Runs%s.log" % width, level=logging.DEBUG)
-        logging.info("image=%s,width=%s,epsilon=%s,margin=%s,iters=%s,elapsed=%s,ph1=%s"
-                     % (image, width, epsilon, margin, iters, elapsed, ph1))
+        logging.basicConfig(filename="%s.log" % name, level=logging.DEBUG)
+        logging.info("image=%s, epsilon=%s, margin=%s, iters=%s, elapsed=%s, ph1=%s"
+                     % (image, epsilon, margin, iters, elapsed, ph1))
         logged_flag = True
     valid_intervals = vad_int
     valid_intervals_len = len(valid_intervals)
@@ -160,9 +157,9 @@ def IBP_p(image, x, x_l, x_u, relu2_l, relu2_u, width, npz, model_path):
     if (not logged_flag):
         import logging
 
-        logging.basicConfig(filename="F_Runs%s.log" % (width), level=logging.DEBUG)
-        logging.info("image=%s,width=%s,epsilon=%s,margin=%s,iters=%s,elapsed=%s,len(valid_intervals)=%s,ph1=%s"
-                     % (image, width, epsilon, margin, iters, elapsed, len(valid_intervals), ph1))
+        logging.basicConfig(filename="F_Runs_%s.log" % name, level=logging.DEBUG)
+        logging.info("image=%s, epsilon=%s, margin=%s, iters=%s, elapsed=%s, len(valid_intervals)=%s, ph1=%s"
+                     % (image, epsilon, margin, iters, elapsed, len(valid_intervals), ph1))
     return ph1
 
 
@@ -177,20 +174,20 @@ def mnist_test_point(filename):
             x.append(float(line.strip()))
     return x
 
-
-if __name__ == "__main__":
+# TODO 还没改完
+def main(name):
     epsilon = 0.025
-    width = 64
 
-    # image = 5
     for image in range(2, 3):
         print("image: ", image)
-        name = 'HybridNN_d2b2_256_784_width64_epochs3'
         rlv = './deepPoly/rlv/%s.rlv' % name  # deepPoly所需的权重文件
         mnist = '../../mnist/mnist_%s_local_property.in' % image
-        x_l, x_u, relu2_l, relu2_u = deepPoly_interval(rlv, mnist, epsilon)
+        x_l, x_u, relu3_l, relu3_u = deepPoly_interval(rlv, mnist, epsilon)
+        relu3_l, relu3_u = my_relu(np.array(relu3_l)), my_relu(np.array(relu3_u))
 
         x = mnist_test_point(mnist)  # 测试点
-        npz = '%s.npz' % name
-        model_path = "./IBP/npz/%s" % npz  # IBP所需的权重文件
-        p = IBP_p(image, x, x_l, x_u, relu2_l, relu2_u, width, npz, model_path)
+        p = IBP_p(image, x, relu3_l, relu3_u, epsilon, name)
+
+
+if __name__ == "__main__":
+    main('HybridNN_d3b1_256_128_64_epochs3')

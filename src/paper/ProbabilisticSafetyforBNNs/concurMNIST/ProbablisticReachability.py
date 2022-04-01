@@ -191,7 +191,7 @@ def interval_bound_propagation_VCAS(a):
             [mW_0, mb_0, mW_1, mb_1, dW_0, db_0, dW_1, db_1] = pickle.load(pickle_file)
     # First, sample and hope some weights satisfy the out_reg constraint
     [sW_0, sb_0, sW_1, sb_1] = GLOBAL_samples
-    print(id * search_samps, (id + 1) * search_samps)
+    # print(id * search_samps, (id + 1) * search_samps)
     sW_0 = sW_0[id * search_samps: (id + 1) * search_samps]
     sb_0 = sb_0[id * search_samps: (id + 1) * search_samps]
     sW_1 = sW_1[id * search_samps: (id + 1) * search_samps]
@@ -217,8 +217,9 @@ def interval_bound_propagation_VCAS(a):
             # extra_gate = (reverse and np.argmax(y_pred_l) != out_ind and np.argmax(y_pred_u) != out_ind)
             safety_check = True
             value_ind = 0
+            value_l = y_pred_l[out_ind]
             for value in y_pred_u:
-                if y_pred_l[out_ind] < value and value_ind != out_ind:  # 如果 最终输出的下界<第i个预测的上界 且 i!=最终输出的索引: 则不安全
+                if value_l < value and value_ind != out_ind:  # 如果 最终输出的下界<第i个预测的上界 且 i!=最终输出的索引: 则不安全
                     safety_check = False
                 value_ind += 1
             if safety_check:
@@ -226,8 +227,7 @@ def interval_bound_propagation_VCAS(a):
                 valid_weight_intervals.append([sW_0[i], sb_0[i], sW_1[i], sb_1[i]])
         else:
             err += 1
-            print(np.argmax(y))
-            print(y)
+            # print(y, np.argmax(y))
             print("Hm, incorrect prediction is worrying...")
             continue
     print("We found %s many valid intervals." % (len(valid_weight_intervals)))
