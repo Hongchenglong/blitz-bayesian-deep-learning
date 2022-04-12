@@ -54,7 +54,7 @@ def gen_rlv_npz(name):
     for i in range(10):
         f.write("Linear outX%d 0.0 1.0 resX%d\n" % (i, i))
     f.close()
-    print("rlv end")
+    print(rlv, "\nrlv end")
 
     # npz保存IBP方法需要的权重
     print("npz start")
@@ -67,7 +67,7 @@ def gen_rlv_npz(name):
              (pre_weights['fc3.weight'].T.detach().cpu().numpy()), (pre_weights['fc3.bias'].detach().cpu().numpy()),
              (pre_weights['fc4.weight_mu'].T.detach().cpu().numpy()), (pre_weights['fc4.bias_mu'].detach().cpu().numpy()),
              (pre_weights['fc4.weight_rho'].T.detach().cpu().numpy()), (pre_weights['fc4.bias_rho'].detach().cpu().numpy()))
-    print("npz end")
+    print(npz, "\nnpz end")
 
 if __name__=="__main__":
     gen_rlv_npz("HybridNN_d3b1_256_128_64_epochs3")

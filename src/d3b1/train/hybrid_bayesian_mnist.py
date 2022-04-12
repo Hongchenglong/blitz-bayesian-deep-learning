@@ -62,4 +62,4 @@ except:
 
 torch.save(classifier.state_dict(), PATH)
 
-print("over")
+print(PATH, " over")

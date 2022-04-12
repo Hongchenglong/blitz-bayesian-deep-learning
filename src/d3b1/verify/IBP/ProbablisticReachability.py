@@ -1,17 +1,13 @@
-import numpy as np
-# import tensorflow as tf
-from multiprocessing import Pool
 import torch
+import numpy as np
+from multiprocessing import Pool
 from blitz.modules import TrainableRandomDistribution
-import torch.nn.functional as F
 
-# 初始化模型的参数
-# with tf.compat.v1.Session() as sess:
-#     tf.compat.v1.global_variables_initializer().run()
 
 def my_relu(arr):
     arr = arr * (arr > 0)
     return arr
+
 
 model_path = "ERR - NO MODEL SET. Call set_model_path function."
 
@@ -142,8 +138,6 @@ def interval_bound_propagation(a):
     x = np.asarray(x)
     x = x.astype('float64')
     relu3_l, relu3_u = my_relu(np.array(in_reg[0])), my_relu(np.array(in_reg[1]))
-    # relu2_l, relu2_u = relu2_l/10, relu2_u/10
-    # relu2_l, relu2_u = F.softmax(torch.from_numpy(relu2_l), dim=0), F.softmax(torch.from_numpy(relu2_u), dim=0)
     out_ind = out_maximal
     loaded_model = np.load(model_path, allow_pickle=True)
     # 权重，偏差，均值，标准差

@@ -1,3 +1,6 @@
+import logging
+import time
+
 import numpy as np
 import torch
 from src.d3b1.verify.deepPoly.DeepPoly import network
@@ -47,7 +50,8 @@ def IBP_p(image, x, relu3_l, relu3_u, epsilon, name):
     # iters = 500
     iters = 100
     nproc = 10
-    margin = 0.000125
+    # margin = 0.0125
+    margin = 0
     model_path = "./IBP/npz/%s.npz" % name  # IBP所需的权重文件
 
     # 模拟神经网络的输出
@@ -190,4 +194,5 @@ def main(name):
 
 
 if __name__ == "__main__":
+    logging.info(time.time())
     main('HybridNN_d3b1_256_128_64_epochs3')

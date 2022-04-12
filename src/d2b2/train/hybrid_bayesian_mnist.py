@@ -50,7 +50,7 @@ for epoch in range(epochs):
             print('Iteration: {} | Accuracy of the network '
                   'on the 10000 test images: {} %'.format(str(iteration), str(100 * correct / total)))
 
-PATH = './pth/c.pth' % (width, epochs)
+PATH = './pth/width%s_epochs%s.pth' % (width, epochs)
 
 import os
 try:

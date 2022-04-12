@@ -236,7 +236,8 @@ class network(object):
                         cur_neuron.algebra_upper[-1] = -aux * pre_neuron.concrete_highest_lower
                         pre(cur_neuron, i)
         # 第3个隐藏层的输出区间
-        lower = upper = []
+        lower = []
+        upper = []
         neurons = self.layers[6].neurons
         for n in neurons:
             lower.append(n.concrete_lower)
