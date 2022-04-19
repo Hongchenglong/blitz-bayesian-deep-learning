@@ -131,6 +131,7 @@ def IBP_p(image, x, relu3_l, relu3_u, epsilon, name):
         import logging
 
         ph1 = 0.0
+
         logging.basicConfig(filename="%s.log" % name, level=logging.DEBUG)
         logging.info("image=%s, epsilon=%s, margin=%s, iters=%s, elapsed=%s, ph1=%s"
                      % (image, epsilon, margin, iters, elapsed, ph1))
