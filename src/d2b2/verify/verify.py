@@ -185,10 +185,11 @@ if __name__ == "__main__":
     # image = 5
     for image in range(2, 3):
         print("image: ", image)
-        name = 'HybridNN_d2b2_256_784_width64_epochs3'
+        name = 'width64_epochs1'
         rlv = './deepPoly/rlv/%s.rlv' % name  # deepPoly所需的权重文件
         mnist = '../../mnist/mnist_%s_local_property.in' % image
         x_l, x_u, relu2_l, relu2_u = deepPoly_interval(rlv, mnist, epsilon)
+        print([x_u[i] - x_l[i] for i in range(len(x_l))])
 
         x = mnist_test_point(mnist)  # 测试点
         npz = '%s.npz' % name
